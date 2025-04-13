@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:frontend/screens/HomePage.dart';
+import 'package:frontend/setting/language/translations.dart';
 
 void main() {
   runApp(const MyApp());
@@ -8,11 +10,14 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
+      // 👈 dùng GetMaterialApp
       debugShowCheckedModeBanner: false,
+      translations: AppTranslations(),
+      locale: const Locale('vi', 'VN'),
+      fallbackLocale: const Locale('en', 'US'),
       home: const HomePage(),
     );
   }

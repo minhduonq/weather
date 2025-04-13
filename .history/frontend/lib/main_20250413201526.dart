@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/HomePage.dart';
+import 'package:frontend/setting/settings_page.dart';
 
 void main() {
   runApp(const MyApp());
