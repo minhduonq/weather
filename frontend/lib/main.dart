@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/HomePage.dart';
-import 'package:frontend/screens/weater_stogare.dart';
+import 'package:frontend/screens/weather_stogare.dart';
 
 void main() {
   runApp(const MyApp());
