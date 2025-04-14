@@ -1,6 +1,0 @@
-${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh
-${BUILT_PRODUCTS_DIR}/OrderedSet/OrderedSet.framework
-${BUILT_PRODUCTS_DIR}/flutter_inappwebview_ios/flutter_inappwebview_ios.framework
-${BUILT_PRODUCTS_DIR}/geocoding_ios/geocoding_ios.framework
-${BUILT_PRODUCTS_DIR}/geolocator_apple/geolocator_apple.framework
-${BUILT_PRODUCTS_DIR}/sqflite_darwin/sqflite_darwin.framework
