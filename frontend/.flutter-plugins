@@ -1,0 +1,18 @@
+# This is a generated file; do not edit or check into version control.
+flutter_inappwebview=/Users/mac/.pub-cache/hosted/pub.dev/flutter_inappwebview-6.1.5/
+flutter_inappwebview_android=/Users/mac/.pub-cache/hosted/pub.dev/flutter_inappwebview_android-1.1.3/
+flutter_inappwebview_ios=/Users/mac/.pub-cache/hosted/pub.dev/flutter_inappwebview_ios-1.1.2/
+flutter_inappwebview_macos=/Users/mac/.pub-cache/hosted/pub.dev/flutter_inappwebview_macos-1.1.2/
+flutter_inappwebview_web=/Users/mac/.pub-cache/hosted/pub.dev/flutter_inappwebview_web-1.1.2/
+flutter_inappwebview_windows=/Users/mac/.pub-cache/hosted/pub.dev/flutter_inappwebview_windows-0.6.0/
+geocoding=/Users/mac/.pub-cache/hosted/pub.dev/geocoding-3.0.0/
+geocoding_android=/Users/mac/.pub-cache/hosted/pub.dev/geocoding_android-3.3.1/
+geocoding_ios=/Users/mac/.pub-cache/hosted/pub.dev/geocoding_ios-3.0.1/
+geolocator=/Users/mac/.pub-cache/hosted/pub.dev/geolocator-13.0.4/
+geolocator_android=/Users/mac/.pub-cache/hosted/pub.dev/geolocator_android-4.6.2/
+geolocator_apple=/Users/mac/.pub-cache/hosted/pub.dev/geolocator_apple-2.3.13/
+geolocator_web=/Users/mac/.pub-cache/hosted/pub.dev/geolocator_web-4.1.3/
+geolocator_windows=/Users/mac/.pub-cache/hosted/pub.dev/geolocator_windows-0.2.5/
+sqflite=/Users/mac/.pub-cache/hosted/pub.dev/sqflite-2.4.2/
+sqflite_android=/Users/mac/.pub-cache/hosted/pub.dev/sqflite_android-2.4.1/
+sqflite_darwin=/Users/mac/.pub-cache/hosted/pub.dev/sqflite_darwin-2.4.2/
