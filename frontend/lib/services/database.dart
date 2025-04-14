@@ -187,4 +187,14 @@ class DatabaseHelper {
     final db = await database;
     return await db.query('daily_data');
   }
+
+  // Phương thức xóa địa điểm
+  Future<void> deleteLocation(int id) async {
+    final db = await database;
+    await db.delete(
+      'location', // Tên bảng
+      where: 'id = ?', // Điều kiện xóa
+      whereArgs: [id], // Tham số
+    );
+  }
 }

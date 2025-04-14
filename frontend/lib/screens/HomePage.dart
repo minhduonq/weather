@@ -250,7 +250,6 @@ class _HomePageState extends State<HomePage> {
     return formattedTime;
   }
 
-
   String getDayName(int epochTime) {
     DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(epochTime * 1000);
     List<String> weekdays = [
@@ -282,233 +281,308 @@ class _HomePageState extends State<HomePage> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(
-        title: Text(currentData.isNotEmpty ? currentData['name'] : ''),
+          title: Text(currentData.isNotEmpty ? currentData['name'] : ''),
         ),
-        body:
-        currentData.isEmpty
+        body: currentData.isEmpty
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-          child: Padding(
-            padding:  const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
                   children: [
-                    // Icon của bạn
-                    // Image.asset(
-                    //   'weather/assets/location.png', // Đường dẫn tới icon của bạn
-                    //   width: 15, // Kích thước icon (có thể điều chỉnh)
-                    //   height: 15, // Kích thước icon (có thể điều chỉnh)
-                    // ),
-                    SizedBox(width: 4), // Khoảng cách giữa icon và text
-                    // Text "Hà Nội"
-                    Text('${currentData['name']}', style: TextStyle(fontSize: 19)),
-                  ],
-                ),
-                Text('${currentData['main']['temp']}\u00B0', style: TextStyle(fontSize: 17),),
-                Text('Feel like ${currentData['main']['feels_like']}\u00B0'),
-                Text('L: ${currentData['main']['temp_min']} H: ${currentData['main']['temp_max']}', textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),),
-                SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Icon của bạn
+                        // Image.asset(
+                        //   'weather/assets/location.png', // Đường dẫn tới icon của bạn
+                        //   width: 15, // Kích thước icon (có thể điều chỉnh)
+                        //   height: 15, // Kích thước icon (có thể điều chỉnh)
+                        // ),
+                        SizedBox(width: 4), // Khoảng cách giữa icon và text
+                        // Text "Hà Nội"
+                        Text('${currentData['name']}',
+                            style: TextStyle(fontSize: 19)),
+                      ],
+                    ),
+                    Text(
+                      '${currentData['main']['temp']}\u00B0',
+                      style: TextStyle(fontSize: 17),
+                    ),
+                    Text(
+                        'Feel like ${currentData['main']['feels_like']}\u00B0'),
+                    Text(
+                      'L: ${currentData['main']['temp_min']} H: ${currentData['main']['temp_max']}',
+                      textAlign: TextAlign.center,
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 20),
 
-                //Hourly Forecast
-                Container(
-                  width: MediaQuery.of(context).size.width - 20,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ListTile(
-                    title: Text('Dự báo 48 giờ'),
-                    subtitle: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: List.generate(
-                            (hourlyData['list']?.length ?? 0),
-                                (index){
-                                  double popValue = (hourlyData['list'][index]['pop'] ?? 0).toDouble();
-                                  int pop1 = (popValue*100).round();
+                    //Hourly Forecast
+                    Container(
+                      width: MediaQuery.of(context).size.width - 20,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ListTile(
+                        title: Text('Dự báo 48 giờ'),
+                        subtitle: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: List.generate(
+                                (hourlyData['list']?.length ?? 0), (index) {
+                              double popValue =
+                                  (hourlyData['list'][index]['pop'] ?? 0)
+                                      .toDouble();
+                              int pop1 = (popValue * 100).round();
                               return Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: Column(
                                   children: [
-                                    Text('${formatEpochTimeToTime(hourlyData['list'][index]['dt'], currentData['timezone'])}'),
-                                    SvgPicture.asset(getWeatherIconPath(hourlyData['list'][index]['weather'][0]['icon']), width: 50, height: 50,),
-                                    Text('${hourlyData['list'][index]['main']['temp']}\u00B0'),
+                                    Text(
+                                        '${formatEpochTimeToTime(hourlyData['list'][index]['dt'], currentData['timezone'])}'),
+                                    SvgPicture.asset(
+                                      getWeatherIconPath(hourlyData['list']
+                                          [index]['weather'][0]['icon']),
+                                      width: 50,
+                                      height: 50,
+                                    ),
+                                    Text(
+                                        '${hourlyData['list'][index]['main']['temp']}\u00B0'),
                                     Row(
                                       children: [
-                                        SvgPicture.asset("assets/svgs/pop.svg", width: 15, height: 15,),
+                                        SvgPicture.asset(
+                                          "assets/svgs/pop.svg",
+                                          width: 15,
+                                          height: 15,
+                                        ),
                                         Text('$pop1%'),
                                       ],
                                     )
                                   ],
                                 ),
                               );
-                            }
+                            }),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-                SizedBox(height: 10),
-                Container(
-                  width: MediaQuery.of(context).size.width - 20,
-                  padding: EdgeInsets.symmetric(horizontal: 0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ListTile(
-                    title: Text('Daily Forecast'),
-                    subtitle: Column(
-                      children: List.generate((dailyData['list'] as List?)?.length ?? 0
-                        , (index) {
-                        final dayName = getDayName(dailyData['list'][index]['dt']);
-                        var maxTemp = double.parse(dailyData['list'][index]['temp']['max'].toString());
-                        var minTemp = double.parse(dailyData['list'][index]['temp']['min'].toString());
-                        final weatherIcon = dailyData['list'][index]['weather'][0]['icon'];
-                        var pop = double.parse(dailyData['list'][index]['pop'].toString());
-                        int max = maxTemp.round();
-                        int min = minTemp.round();
-                        int pop1 = (pop*100).round();
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                                children: [
-                                  Container(
-                                    width: (MediaQuery.of(context).size.width-20)/10*3,
-                                    child: Text('$dayName', style: TextStyle(fontWeight: FontWeight.bold),),
-                                  ),
-                                  Container(
-
-                                      width: (MediaQuery.of(context).size.width-20)/10*1.3,
-                                      child: Row(
-                                        children: [
-                                          SvgPicture.asset('assets/svgs/pop.svg', width: 15),
-                                          Text(' $pop1%'),
-                                        ],
-                                      )
-                                  ),
-                                  Container(
-                                    width: (MediaQuery.of(context).size.width-20)/10*1.8,
-                                    child: SvgPicture.asset(getWeatherIconPath(weatherIcon), width: 35, height: 35,) ,
-                                  ),
-                                  Container(
-                                    //width: (MediaQuery.of(context).size.width-20)*,
-                                    child: Row(
+                    SizedBox(height: 10),
+                    Container(
+                        width: MediaQuery.of(context).size.width - 20,
+                        padding: EdgeInsets.symmetric(horizontal: 0),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ListTile(
+                            title: Text('Daily Forecast'),
+                            subtitle: Column(
+                              children: List.generate(
+                                  (dailyData['list'] as List?)?.length ?? 0,
+                                  (index) {
+                                final dayName =
+                                    getDayName(dailyData['list'][index]['dt']);
+                                var maxTemp = double.parse(dailyData['list']
+                                        [index]['temp']['max']
+                                    .toString());
+                                var minTemp = double.parse(dailyData['list']
+                                        [index]['temp']['min']
+                                    .toString());
+                                final weatherIcon = dailyData['list'][index]
+                                    ['weather'][0]['icon'];
+                                var pop = double.parse(
+                                    dailyData['list'][index]['pop'].toString());
+                                int max = maxTemp.round();
+                                int min = minTemp.round();
+                                int pop1 = (pop * 100).round();
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
                                       children: [
                                         Container(
-                                          padding: EdgeInsets.all(5),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(10),
-
+                                          width: (MediaQuery.of(context)
+                                                      .size
+                                                      .width -
+                                                  20) /
+                                              10 *
+                                              3,
+                                          child: Text(
+                                            '$dayName',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold),
                                           ),
-                                          width:(MediaQuery.of(context).size.width-20)/10*1.2,
-                                          child: Text('$max\u00B0', style: TextStyle(fontWeight: FontWeight.bold),),
                                         ),
                                         Container(
-                                          padding: EdgeInsets.all(5),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(10),
+                                            width: (MediaQuery.of(context)
+                                                        .size
+                                                        .width -
+                                                    20) /
+                                                10 *
+                                                1.3,
+                                            child: Row(
+                                              children: [
+                                                SvgPicture.asset(
+                                                    'assets/svgs/pop.svg',
+                                                    width: 15),
+                                                Text(' $pop1%'),
+                                              ],
+                                            )),
+                                        Container(
+                                          width: (MediaQuery.of(context)
+                                                      .size
+                                                      .width -
+                                                  20) /
+                                              10 *
+                                              1.8,
+                                          child: SvgPicture.asset(
+                                            getWeatherIconPath(weatherIcon),
+                                            width: 35,
+                                            height: 35,
                                           ),
-                                          width:(MediaQuery.of(context).size.width-20)/10*1.2,
-                                          child: Text('$min\u00B0', style: TextStyle(fontWeight: FontWeight.bold),),
-                                        )
+                                        ),
+                                        Container(
+                                          //width: (MediaQuery.of(context).size.width-20)*,
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                padding: EdgeInsets.all(5),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                width: (MediaQuery.of(context)
+                                                            .size
+                                                            .width -
+                                                        20) /
+                                                    10 *
+                                                    1.2,
+                                                child: Text(
+                                                  '$max\u00B0',
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
+                                              ),
+                                              Container(
+                                                padding: EdgeInsets.all(5),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                width: (MediaQuery.of(context)
+                                                            .size
+                                                            .width -
+                                                        20) /
+                                                    10 *
+                                                    1.2,
+                                                child: Text(
+                                                  '$min\u00B0',
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
+                                              )
+                                            ],
+                                          ),
+                                        ),
                                       ],
-                                    ),
-                                  ),
+                                    )
+                                  ],
+                                );
+                              }),
+                            ))),
+                    SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Box 1: Visibility
+                          Expanded(
+                            child: Container(
+                              margin: const EdgeInsets.only(
+                                  right: 8), // Khoảng cách giữa 2 box
+                              decoration: BoxDecoration(
+                                color:
+                                    Colors.lightBlue.withOpacity(0.2), // màu mờ
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.blue, // màu viền
+                                  width: 1,
+                                ),
+                              ),
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('Visibility',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  Text('${currentData['visibility']}',
+                                      style: const TextStyle(fontSize: 24)),
                                 ],
-                            )
-                          ],
-                        );
-                      }),
-                    )
-                  )
-                ),
-                SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Box 1: Visibility
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 8), // Khoảng cách giữa 2 box
-                          decoration: BoxDecoration(
-                            color: Colors.lightBlue.withOpacity(0.2), // màu mờ
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.blue, // màu viền
-                              width: 1,
+                              ),
                             ),
                           ),
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text('Visibility', style: TextStyle(fontWeight: FontWeight.bold)),
-                              Text('${currentData['visibility']}', style: const TextStyle(fontSize: 24)),
-                            ],
-                          ),
-                        ),
-                      ),
 
-                      // Box 2: Pressure
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.lightBlue.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.blue,
-                              width: 1,
+                          // Box 2: Pressure
+                          Expanded(
+                            child: Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.lightBlue.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.blue,
+                                  width: 1,
+                                ),
+                              ),
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('Pressure',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  Text('${currentData['main']['pressure']}',
+                                      style: const TextStyle(fontSize: 24)),
+                                ],
+                              ),
                             ),
                           ),
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text('Pressure', style: TextStyle(fontWeight: FontWeight.bold)),
-                              Text('${currentData['main']['pressure']}', style: const TextStyle(fontSize: 24)),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                Container(
-
-                  width: MediaQuery.of(context).size.width - 20,
-                  height: 300, // Chiều cao của bản đồ
-                  decoration: BoxDecoration(
-                    // border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: InAppWebView(
-                    initialFile: "assets/weather_map.html",
-                    onWebViewCreated: (controller) async {
-                      if (currentPosition != null) {
-                        await Future.delayed(Duration(seconds: 1)); // đảm bảo webView đã load xong
-                        controller.evaluateJavascript(source: '''
+                    ),
+                    Container(
+                      width: MediaQuery.of(context).size.width - 20,
+                      height: 300, // Chiều cao của bản đồ
+                      decoration: BoxDecoration(
+                        // border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: InAppWebView(
+                        initialFile: "assets/weather_map.html",
+                        onWebViewCreated: (controller) async {
+                          if (currentPosition != null) {
+                            await Future.delayed(Duration(
+                                seconds: 1)); // đảm bảo webView đã load xong
+                            controller.evaluateJavascript(source: '''
       updateMap(${currentPosition!.latitude}, ${currentPosition!.longitude});
     ''');
-                      }
-                    },
-                  ),
-                )
-
-              ],
-
-            ),
-          )
-        ),
+                          }
+                        },
+                      ),
+                    )
+                  ],
+                ),
+              )),
       ),
     );
   }
