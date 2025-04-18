@@ -98,6 +98,12 @@ flutter:
     - assets/svgs/pressure.svg
     - assets/svgs/cloudiness.svg
     - assets/weather_map.html
+    - assets/svgs/detail.png
+    - assets/svgs/AI.png
+    - assets/svgs/location.png
+    - assets/svgs/map.png
+    - assets/svgs/setting.png
+    - assets/svgs/o.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
