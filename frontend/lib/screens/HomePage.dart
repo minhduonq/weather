@@ -8,6 +8,9 @@ import 'package:frontend/services/database.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../services/constants.dart';
+import 'LocationManage.dart';
+import 'SearchPlace.dart';
+import 'Setting.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,7 +19,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  Position? currentPosition;
 
   late bool servicePermission = false;
   late LocationPermission permission;
@@ -24,7 +26,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    deleteWeatherDBIfDebug(); // Gọi hàm xóa DB nếu đang debug
+    //deleteWeatherDBIfDebug(); // Gọi hàm xóa DB nếu đang debug
     _requestLocationPermission();
   }
 
@@ -47,6 +49,21 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Future<void> _getCurrentLocation() async {
+  //   Position position = await Geolocator.getCurrentPosition();
+  //   setState(() {
+  //     currentPosition = position;
+  //   });
+  //   if (KeyLocation == null) {
+  //     KeyLocation = currentPosition;
+  //   }
+  //   fetchWeatherData(KeyLocation!.latitude, KeyLocation!.longitude);
+  //   // getAQIIndex(KeyLocation!.latitude, KeyLocation!.longitude);
+  //   getLocationName(KeyLocation!.latitude, KeyLocation!.longitude);
+  //   print(KeyLocation!.latitude);
+  //   print(KeyLocation!.longitude);
+  // }
+
   Future<void> _getCurrentLocation() async {
     Position position = await Geolocator.getCurrentPosition();
     setState(() {
@@ -55,9 +72,11 @@ class _HomePageState extends State<HomePage> {
     if (KeyLocation == null) {
       KeyLocation = currentPosition;
     }
-    fetchWeatherData(KeyLocation!.latitude, KeyLocation!.longitude);
-    // getAQIIndex(KeyLocation!.latitude, KeyLocation!.longitude);
-    // getLocationName(KeyLocation!.latitude, KeyLocation!.longitude);
+
+    // Use our new method that tries database first, then API
+    await loadWeatherData(KeyLocation!.latitude, KeyLocation!.longitude);
+
+    getLocationName(KeyLocation!.latitude, KeyLocation!.longitude);
     print(KeyLocation!.latitude);
     print(KeyLocation!.longitude);
   }
@@ -68,17 +87,30 @@ class _HomePageState extends State<HomePage> {
   Map<String, dynamic> weatherName = {};
   Map<String, dynamic> weatherInfo = {};
 
+  Future<void> getLocationName(double lat, double lon) async {
+    final key = HereAPI;
+    final lat = currentPosition?.latitude;
+    final lon = currentPosition?.longitude;
+    final url =
+        'https://revgeocode.search.hereapi.com/v1/revgeocode?at=$lat,$lon&apiKey=$key';
+
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      setState(() {
+        weatherName = json.decode(utf8.decode(response.bodyBytes));
+      });
+    } else {
+      throw Exception('Fail to load Location name');
+    }
+    if(LocationName == '') {
+      LocationName = weatherName.isNotEmpty ? weatherName["items"][0]["address"]["city"] : "";
+    }
+    InitialName = weatherName.isNotEmpty ? weatherName["items"][0]["address"]["city"] : "";
+  }
+
   Future<void> fetchWeatherData(double lat, double lon) async {
-    // var lat = KeyLocation!.latitude;
-    // var lon = KeyLocation!.longitude;
-    // print('lat: $lat, lon: $lon');
-    // Load detail information
-    //Change 192.168.x.x to your localIP, not localhost
-    // final uri = Uri.parse(
-    //   'http://192.168.1.13:3002/weather/detail?lat=$lat&lon=$lon',
-    // );
-    final uri =
-    // final response = await http.get(Uri.parse(detail));
+        final uri =
+        'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$API_KEY&units=$type';
     try {
       final response = await http.get(Uri.parse(uri));
       if (response.statusCode == 200) {
@@ -86,7 +118,7 @@ class _HomePageState extends State<HomePage> {
 
         final locationData = {
           'id': data['id'], // ID từ API
-          'name': data['name'],
+          'name': LocationName,
           'latitude': data['coord']['lat'],
           'longitude': data['coord']['lon'],
         };
@@ -115,7 +147,8 @@ class _HomePageState extends State<HomePage> {
 
         await dbHelper.insertWeatherData(weatherData);
         setState(() {
-          currentData = json.decode(response.body);
+          //currentData = json.decode(response.body);
+          currentData = data;
         });
       } else {
         setState(() {
@@ -129,6 +162,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     final hourly =
+        'https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=$lat&lon=$lon&appid=$API_KEY&cnt=24&units=$type';
     final response2 = await http.get(Uri.parse(hourly));
     if (response2.statusCode == 200) {
       final data = json.decode(response2.body);
@@ -139,7 +173,7 @@ class _HomePageState extends State<HomePage> {
       // Lấy danh sách hourly data
       final List<dynamic> hourlyList = data['list'];
 
-      // Lưu từng mục vào bảng hourly_data
+      //Lưu từng mục vào bảng hourly_data
       final dbHelper = DatabaseHelper();
       for (var hourly in hourlyList) {
         final hourlyData = {
@@ -155,13 +189,14 @@ class _HomePageState extends State<HomePage> {
       }
 
       setState(() {
-        hourlyData = json.decode(response2.body);
+        hourlyData = data;
       });
     } else {
       throw Exception('Failed to load weather data hourly');
     }
 
     final daily =
+        'http://api.openweathermap.org/data/2.5/forecast/daily?lat=$lat&lon=$lon&cnt=7&appid=$API_KEY&units=$type';
     final response3 = await http.get(Uri.parse(daily));
     if (response3.statusCode == 200) {
       final data = json.decode(response3.body);
@@ -188,12 +223,180 @@ class _HomePageState extends State<HomePage> {
       }
 
       setState(() {
-        dailyData = json.decode(response3.body);
+        dailyData = data;
       });
     } else {
       throw Exception('Failed to load weather data daily');
     }
   }
+
+  // Method to load weather data from database
+  Future<void> loadWeatherDataFromDatabase(int locationId) async {
+    final dbHelper = DatabaseHelper();
+
+    // Load location data
+    final locations = await dbHelper.getLocationById(locationId);
+    if (locations.isNotEmpty) {
+      final location = locations.first;
+
+      // Load current weather data
+      final weatherDataList = await dbHelper.getWeatherDataByLocationId(locationId);
+      if (weatherDataList.isNotEmpty) {
+        final weatherData = weatherDataList.first;
+        setState(() {
+          // Convert database data to format expected by UI
+          currentData = {
+            'id': locationId,
+            'name': location['name'],
+            'coord': {
+              'lat': location['latitude'],
+              'lon': location['longitude']
+            },
+            'main': {
+              'temp': weatherData['temperature'],
+              'feels_like': weatherData['feelsLike'],
+              'temp_max': weatherData['maxTemp'],
+              'temp_min': weatherData['minTemp'],
+              'pressure': weatherData['pressure'],
+              'humidity': weatherData['humidity'],
+              'sea_level': weatherData['pressure'] // Using pressure as sea level for simplicity
+            },
+            'wind': {
+              'speed': weatherData['windSpeed']
+            },
+            'clouds': {
+              'all': weatherData['cloud']
+            },
+            'sys': {
+              'sunrise': weatherData['sunrise'],
+              'sunset': weatherData['sunset']
+            },
+            'weather': [
+              {
+                'description': weatherData['description'],
+                'icon': weatherData['icon']
+              }
+            ],
+            'visibility': weatherData['visibility'],
+            'timezone': weatherData['timeZone'],
+            'dt': DateTime.now().millisecondsSinceEpoch ~/ 1000 // Current time as epoch
+          };
+        });
+      }
+
+      // Load hourly data
+      final hourlyDataList = await dbHelper.getHourlyDataByLocationId(locationId);
+      if (hourlyDataList.isNotEmpty) {
+        setState(() {
+          // Convert database data to format expected by UI
+          hourlyData = {
+            'city': {
+              'id': locationId,
+              'name': location['name'],
+              'coord': {
+                'lat': location['latitude'],
+                'lon': location['longitude']
+              }
+            },
+            'list': hourlyDataList.map((hourly) => {
+              'dt': hourly['time'],
+              'main': {
+                'temp': (hourly['temperatureMax'] + hourly['temperatureMin']) / 2, // Average temp
+                'temp_max': hourly['temperatureMax'],
+                'temp_min': hourly['temperatureMin'],
+                'humidity': hourly['humidity']
+              },
+              'weather': [
+                {
+                  'icon': hourly['icon']
+                }
+              ],
+              'pop': 0.0 // Default value for precipitation probability
+            }).toList()
+          };
+        });
+      }
+
+      // Load daily data
+      final dailyDataList = await dbHelper.getDailyDataByLocationId(locationId);
+      if (dailyDataList.isNotEmpty) {
+        setState(() {
+          // Convert database data to format expected by UI
+          dailyData = {
+            'city': {
+              'id': locationId,
+              'name': location['name'],
+              'coord': {
+                'lat': location['latitude'],
+                'lon': location['longitude']
+              }
+            },
+            'list': dailyDataList.map((daily) => {
+              'dt': daily['time'],
+              'temp': {
+                'max': daily['temperatureMax'],
+                'min': daily['temperatureMin']
+              },
+              'humidity': daily['humidity'],
+              'weather': [
+                {
+                  'icon': daily['icon']
+                }
+              ],
+              'pop': 0.0 // Default value for precipitation probability
+            }).toList()
+          };
+        });
+      }
+    }
+  }
+
+// Helper method to try loading from database first, then fetch from API if needed
+  Future<void> loadWeatherData(double lat, double lon) async {
+    try {
+      // First try to find a nearby location in the database
+      final dbHelper = DatabaseHelper();
+      final locations = await dbHelper.getAllLocations();
+
+      int? locationId;
+      for (var location in locations) {
+        double dLat = location['latitude'] - lat;
+        double dLon = location['longitude'] - lon;
+        // If location is very close (within ~1km), use it
+        if (dLat * dLat + dLon * dLon < 0.0001) {
+          locationId = location['id'];
+          break;
+        }
+      }
+
+      if (locationId != null) {
+        // Load from database
+        await loadWeatherDataFromDatabase(locationId);
+
+        // Check if data is recent (less than 1 hour old)
+        final weatherDataList = await dbHelper.getWeatherDataByLocationId(locationId);
+        if (weatherDataList.isNotEmpty) {
+          final updatedAt = DateTime.parse(weatherDataList.first['updatedAt']);
+          final now = DateTime.now();
+          final difference = now.difference(updatedAt);
+
+          // If data is recent, return without fetching from API
+          if (difference.inHours < 1) {
+            return;
+          }
+        }
+      }
+
+      // If no recent data found in database, fetch from API
+      await fetchWeatherData(lat, lon);
+    } catch (e) {
+      print('Error loading weather data: $e');
+      // If all else fails, fetch from API
+      await fetchWeatherData(lat, lon);
+    }
+  }
+
+
 
   Future<void> printDatabaseData() async {
     final dbHelper = DatabaseHelper();
@@ -215,27 +418,6 @@ class _HomePageState extends State<HomePage> {
     print('Daily Data: $dailyData');
   }
 
-  // Future<void> getLocationName(double lat, double lon) async {
-  //   final lat = currentPosition?.latitude;
-  //   final lon = currentPosition?.longitude;
-  //   final url =
-  //       'http://api.openweathermap.org/geo/1.0/reverse?lat=$lat&lon=$lon&limit=1&appid=$API_KEY';
-
-  //   final response = await http.get(Uri.parse(url));
-  //   if (response.statusCode == 200) {
-  //     setState(() {
-  //       weatherName = json.decode(utf8.decode(response.bodyBytes));
-  //     });
-  //   } else {
-  //     throw Exception('Fail to load Location name');
-  //   }
-  //   if (LocationName == null) {
-  //     LocationName =
-  //         weatherName.isNotEmpty ? weatherName["items"][0]["name"] : "";
-  //   }
-  //   InitialName = weatherName.isNotEmpty ? weatherName["items"][0]["name"] : "";
-  // }
-
   String formatEpochTimeToTime(int epochTime, int timezoneOffsetInSeconds) {
     // Cộng thêm timezone offset để chuyển sang giờ địa phương
     DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(
@@ -251,13 +433,13 @@ class _HomePageState extends State<HomePage> {
   String getDayName(int epochTime) {
     DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(epochTime * 1000);
     List<String> weekdays = [
-      'Thứ Hai',
-      'Thứ Ba',
-      'Thứ Tư',
-      'Thứ Năm',
-      'Thứ Sáu',
-      'Thứ Bảy',
-      'Chủ Nhật',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
     ];
     return weekdays[dateTime.weekday - 1];
   }
@@ -274,313 +456,619 @@ class _HomePageState extends State<HomePage> {
     // getLocationName(lat, lon);
   }
 
+  String capitalize(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(
-          title: Text(currentData.isNotEmpty ? currentData['name'] : ''),
+          title: Text('$LocationName'),
         ),
-        body: currentData.isEmpty
+        backgroundColor: Colors.white,
+        drawer: Drawer(
+          backgroundColor: Colors.grey[200],
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        onPressed: () {},
+                        icon: Image.asset(
+                          'assets/svgs/AI.png',
+                          width: 60,
+                          height: 60,
+                        ),
+                        iconSize: 45,
+                      ),
+                      SizedBox(width: 16),
+                      IconButton(
+                        onPressed: () {
+                          Navigator.of(context).push(MaterialPageRoute(builder: (context) => Setting()));
+                        },
+                        icon: Image.asset(
+                          'assets/svgs/setting.png',
+                          width: 35,
+                          height: 35,
+                        ),
+                        iconSize: 25,
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    '★ Favourite Places',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                ListTile(
+                    contentPadding: EdgeInsets.only(left: 52.0),
+                    title: Text('$InitialName'),
+                    onTap: () {
+                      setState(() {
+                        LocationName = InitialName;
+                        KeyLocation = null;
+                        Navigator.of(context).push(MaterialPageRoute(builder: (context) =>  HomePage()));
+                      });
+                    }
+                ),
+                ListTile(
+                    leading: Icon(Icons.location_searching_sharp),
+                    title: Text('Other Places', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(builder: (context) =>  SearchPlace()));
+                    }
+                ),
+                ...selectedPlaces.map((place) {
+                  return ListTile(
+                    contentPadding: EdgeInsets.only(left: 52.0),
+                    title: Text(place['name']),
+                    onTap: () {
+                      // Thực hiện hành động khi bấm vào địa điểm, ví dụ hiển thị thông tin chi tiết
+                      LocationName = OfficialName(place['name']);
+                      KeyLocation = Position(
+                        latitude: place['latitude'],
+                        longitude: place['longitude'],
+                        timestamp: DateTime.now(),
+                        accuracy: 0.0,
+                        altitude: 0.0,
+                        heading: 0.0,
+                        speed: 0.0,
+                        speedAccuracy: 0.0,
+                        altitudeAccuracy: 0.0,
+                        headingAccuracy: 0.0,
+                      );
+                      Navigator.of(context).push(MaterialPageRoute(builder: (context) => HomePage()));
+                    },
+                  );
+                }).toList(),
+                ListTile(
+                  leading: Icon(Icons.notes_outlined),
+                  title: Text('Place Management', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => LocationManage()));
+                  },
+                ),
+                Divider(color: Colors.black54,),
+              ],
+            ),
+          ),
+        ),
+        body:
+        currentData.isEmpty
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Icon của bạn
-                        // Image.asset(
-                        //   'weather/assets/location.png', // Đường dẫn tới icon của bạn
-                        //   width: 15, // Kích thước icon (có thể điều chỉnh)
-                        //   height: 15, // Kích thước icon (có thể điều chỉnh)
-                        // ),
-                        SizedBox(width: 4), // Khoảng cách giữa icon và text
-                        // Text "Hà Nội"
-                        Text('${currentData['name']}',
-                            style: TextStyle(fontSize: 19)),
-                      ],
-                    ),
+                    // Icon của bạn
+                    // Image.asset(
+                    //   'weather/assets/location.png', // Đường dẫn tới icon của bạn
+                    //   width: 15, // Kích thước icon (có thể điều chỉnh)
+                    //   height: 15, // Kích thước icon (có thể điều chỉnh)
+                    // ),
+                    SizedBox(width: 4), // Khoảng cách giữa icon và text
+                    // Text "Hà Nội"
                     Text(
-                      '${currentData['main']['temp']}\u00B0',
-                      style: TextStyle(fontSize: 17),
+                      '${LocationName}',
+                      style: TextStyle(fontSize: 19),
                     ),
-                    Text(
-                        'Feel like ${currentData['main']['feels_like']}\u00B0'),
-                    Text(
-                      'L: ${currentData['main']['temp_min']} H: ${currentData['main']['temp_max']}',
-                      textAlign: TextAlign.center,
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 20),
-
-                    //Hourly Forecast
-                    Container(
-                      width: MediaQuery.of(context).size.width - 20,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: ListTile(
-                        title: Text('Dự báo 48 giờ'),
-                        subtitle: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: List.generate(
-                                (hourlyData['list']?.length ?? 0), (index) {
-                              double popValue =
-                                  (hourlyData['list'][index]['pop'] ?? 0)
-                                      .toDouble();
-                              int pop1 = (popValue * 100).round();
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                        '${formatEpochTimeToTime(hourlyData['list'][index]['dt'], currentData['timezone'])}'),
-                                    SvgPicture.asset(
-                                      getWeatherIconPath(hourlyData['list']
-                                          [index]['weather'][0]['icon']),
-                                      width: 50,
-                                      height: 50,
-                                    ),
-                                    Text(
-                                        '${hourlyData['list'][index]['main']['temp']}\u00B0'),
-                                    Row(
-                                      children: [
-                                        SvgPicture.asset(
-                                          "assets/svgs/pop.svg",
-                                          width: 15,
-                                          height: 15,
-                                        ),
-                                        Text('$pop1%'),
-                                      ],
-                                    )
-                                  ],
-                                ),
-                              );
-                            }),
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Container(
-                        width: MediaQuery.of(context).size.width - 20,
-                        padding: EdgeInsets.symmetric(horizontal: 0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: ListTile(
-                            title: Text('Daily Forecast'),
-                            subtitle: Column(
-                              children: List.generate(
-                                  (dailyData['list'] as List?)?.length ?? 0,
-                                  (index) {
-                                final dayName =
-                                    getDayName(dailyData['list'][index]['dt']);
-                                var maxTemp = double.parse(dailyData['list']
-                                        [index]['temp']['max']
-                                    .toString());
-                                var minTemp = double.parse(dailyData['list']
-                                        [index]['temp']['min']
-                                    .toString());
-                                final weatherIcon = dailyData['list'][index]
-                                    ['weather'][0]['icon'];
-                                var pop = double.parse(
-                                    dailyData['list'][index]['pop'].toString());
-                                int max = maxTemp.round();
-                                int min = minTemp.round();
-                                int pop1 = (pop * 100).round();
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: (MediaQuery.of(context)
-                                                      .size
-                                                      .width -
-                                                  20) /
-                                              10 *
-                                              3,
-                                          child: Text(
-                                            '$dayName',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                        Container(
-                                            width: (MediaQuery.of(context)
-                                                        .size
-                                                        .width -
-                                                    20) /
-                                                10 *
-                                                1.3,
-                                            child: Row(
-                                              children: [
-                                                SvgPicture.asset(
-                                                    'assets/svgs/pop.svg',
-                                                    width: 15),
-                                                Text(' $pop1%'),
-                                              ],
-                                            )),
-                                        Container(
-                                          width: (MediaQuery.of(context)
-                                                      .size
-                                                      .width -
-                                                  20) /
-                                              10 *
-                                              1.8,
-                                          child: SvgPicture.asset(
-                                            getWeatherIconPath(weatherIcon),
-                                            width: 35,
-                                            height: 35,
-                                          ),
-                                        ),
-                                        Container(
-                                          //width: (MediaQuery.of(context).size.width-20)*,
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                padding: EdgeInsets.all(5),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius:
-                                                      BorderRadius.circular(10),
-                                                ),
-                                                width: (MediaQuery.of(context)
-                                                            .size
-                                                            .width -
-                                                        20) /
-                                                    10 *
-                                                    1.2,
-                                                child: Text(
-                                                  '$max\u00B0',
-                                                  style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold),
-                                                ),
-                                              ),
-                                              Container(
-                                                padding: EdgeInsets.all(5),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius:
-                                                      BorderRadius.circular(10),
-                                                ),
-                                                width: (MediaQuery.of(context)
-                                                            .size
-                                                            .width -
-                                                        20) /
-                                                    10 *
-                                                    1.2,
-                                                child: Text(
-                                                  '$min\u00B0',
-                                                  style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold),
-                                                ),
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  ],
-                                );
-                              }),
-                            ))),
-                    SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Box 1: Visibility
-                          Expanded(
-                            child: Container(
-                              margin: const EdgeInsets.only(
-                                  right: 8), // Khoảng cách giữa 2 box
-                              decoration: BoxDecoration(
-                                color:
-                                    Colors.lightBlue.withOpacity(0.2), // màu mờ
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.blue, // màu viền
-                                  width: 1,
-                                ),
-                              ),
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text('Visibility',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  Text('${currentData['visibility']}',
-                                      style: const TextStyle(fontSize: 24)),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          // Box 2: Pressure
-                          Expanded(
-                            child: Container(
-                              margin: const EdgeInsets.only(left: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.lightBlue.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.blue,
-                                  width: 1,
-                                ),
-                              ),
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text('Pressure',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  Text('${currentData['main']['pressure']}',
-                                      style: const TextStyle(fontSize: 24)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: MediaQuery.of(context).size.width - 20,
-                      height: 300, // Chiều cao của bản đồ
-                      decoration: BoxDecoration(
-                        // border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: InAppWebView(
-                        initialFile: "assets/weather_map.html",
-                        onWebViewCreated: (controller) async {
-                          if (currentPosition != null) {
-                            await Future.delayed(Duration(
-                                seconds: 1)); // đảm bảo webView đã load xong
-                            controller.evaluateJavascript(source: '''
-      updateMap(${currentPosition!.latitude}, ${currentPosition!.longitude});
-    ''');
-                          }
-                        },
-                      ),
-                    )
                   ],
                 ),
-              )),
+                Text(
+                  '${currentData['main']['temp']}\u00B0',
+                  style: TextStyle(fontSize: 17),
+                ),
+                Text(
+                  'Feel like ${currentData['main']['feels_like']}\u00B0',
+                ),
+                Text(
+                  'L: ${currentData['main']['temp_min']} H: ${currentData['main']['temp_max']}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 20),
+
+                //Hourly Forecast
+                Container(
+                  width: MediaQuery.of(context).size.width - 20,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white,
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      currentData.isNotEmpty
+                          ? capitalize(
+                        currentData['weather'][0]['description'],
+                      )
+                          : '',
+                    ),
+                    subtitle: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: List.generate(
+                          (hourlyData['list']?.length ?? 0),
+                              (index) {
+                            double popValue =
+                            (hourlyData['list'][index]['pop'] ?? 0)
+                                .toDouble();
+                            int pop1 = (popValue * 100).round();
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    '${formatEpochTimeToTime(hourlyData['list'][index]['dt'], currentData['timezone'])}',
+                                  ),
+                                  SvgPicture.asset(
+                                    getWeatherIconPath(
+                                      hourlyData['list'][index]['weather'][0]['icon'],
+                                    ),
+                                    width: 50,
+                                    height: 50,
+                                  ),
+                                  Text(
+                                    '${hourlyData['list'][index]['main']['temp']}\u00B0',
+                                  ),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        "assets/svgs/pop.svg",
+                                        width: 15,
+                                        height: 15,
+                                      ),
+                                      Text('$pop1%'),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                Container(
+                  width: MediaQuery.of(context).size.width - 20,
+                  padding: EdgeInsets.symmetric(horizontal: 0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: ListTile(
+                    title: Text('Daily Forecast'),
+                    subtitle: Column(
+                      children: List.generate(
+                        (dailyData['list'] as List?)?.length ?? 0,
+                            (index) {
+                          final dayName = getDayName(
+                            dailyData['list'][index]['dt'],
+                          );
+                          var maxTemp = double.parse(
+                            dailyData['list'][index]['temp']['max']
+                                .toString(),
+                          );
+                          var minTemp = double.parse(
+                            dailyData['list'][index]['temp']['min']
+                                .toString(),
+                          );
+                          final weatherIcon =
+                          dailyData['list'][index]['weather'][0]['icon'];
+                          var pop = double.parse(
+                            dailyData['list'][index]['pop'].toString(),
+                          );
+                          int max = maxTemp.round();
+                          int min = minTemp.round();
+                          int pop1 = (pop * 100).round();
+                          return Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width:
+                                    (MediaQuery.of(context,).size.width -20) /10 *2.8,
+                                    child: Text(
+                                      '$dayName',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    width:
+                                    (MediaQuery.of( context,).size.width - 20) / 10 * 1.5,
+                                    child: Row(
+                                      children: [
+                                        SvgPicture.asset(
+                                          'assets/svgs/pop.svg',
+                                          width: 15,
+                                        ),
+                                        Text(' $pop1%'),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    width:
+                                    (MediaQuery.of( context,).size.width - 20) / 10 *1.8,
+                                    child: SvgPicture.asset(
+                                      getWeatherIconPath(weatherIcon),
+                                      width: 35,
+                                      height: 35,
+                                    ),
+                                  ),
+                                  Container(
+                                    //width: (MediaQuery.of(context).size.width-20)*,
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: EdgeInsets.all(5),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                            BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          width:
+                                          (MediaQuery.of(
+                                            context,
+                                          ).size.width -
+                                              20) /
+                                              10 *
+                                              1.2,
+                                          child: Text(
+                                            '$max\u00B0',
+                                            style: TextStyle(
+                                              fontWeight:
+                                              FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: EdgeInsets.all(5),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                            BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          width:
+                                          (MediaQuery.of( context,).size.width -20) /10 *1.2,
+                                          child: Text('$min\u00B0',style: TextStyle(fontWeight:FontWeight.bold,
+                                          ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Box 1: Humidity
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(
+                            right: 8,
+                          ), // Khoảng cách giữa 2 box
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.blue.withOpacity(0.2), // màu viền
+                              width: 1,
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'Humidity',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '${currentData['main']['humidity']}%',
+                                style: const TextStyle(fontSize: 24),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Box 2: Sea Level
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          decoration: BoxDecoration(
+
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.blue.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'Sea Level',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '${currentData['main']['sea_level']}',
+                                style: const TextStyle(fontSize: 24),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Box 1: Cloudiness
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(
+                            right: 8,
+                          ), // Khoảng cách giữa 2 box
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.blue.withOpacity(0.2), // màu viền
+                              width: 1,
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'Cloud',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '${currentData['clouds']['all']}%',
+                                style: const TextStyle(fontSize: 24),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Box 2: Sea Level
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          decoration: BoxDecoration(
+
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.blue.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'Wind Speed',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '${currentData['wind']['speed']}km/h',
+                                style: const TextStyle(fontSize: 24),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10),
+                Container(
+                  width: MediaQuery.of(context).size.width - 20,
+                  height: 300, // Chiều cao của bản đồ
+                  decoration: BoxDecoration(
+                    // border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: InAppWebView(
+                    initialFile: "assets/weather_map.html",
+                    onWebViewCreated: (controller) async {
+                      if (KeyLocation != null) {
+                        await Future.delayed(
+                          Duration(seconds: 1),
+                        ); // đảm bảo webView đã load xong
+                        controller.evaluateJavascript(
+                          source: '''
+      updateMap(${KeyLocation!.latitude}, ${KeyLocation!.longitude});
+    ''',
+                        );
+                      }
+                    },
+                  ),
+                ),
+                SizedBox(height: 10),
+                Container(
+                  width: MediaQuery.of(context).size.width - 20,
+                  padding: EdgeInsets.symmetric(horizontal: 0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+
+                  ),
+                  child: Row(
+
+                    children: [
+                      Expanded(child: Container(
+                        padding: EdgeInsets.only(top: 10, bottom: 10),
+                        width: (MediaQuery.of(context).size.width - 20)/2,
+                        child: Column(
+                          children: [
+                            Text('Sunriset', style: TextStyle(fontWeight: FontWeight.bold),),
+                            Text('${formatEpochTimeToTime(currentData['sys']['sunrise'], currentData['timezone'])}',style: TextStyle(fontWeight: FontWeight.bold)),
+                            SvgPicture.asset("assets/svgs/sunrise.svg", width: 70, height: 70),
+
+                          ],
+                        ),
+                      ),
+                      ),
+                      Expanded(child: Container(
+                        width: (MediaQuery.of(context).size.width - 20)/2,
+                        padding: EdgeInsets.only(top: 10, bottom: 10),
+                        child: Column(
+                          children: [
+                            Text('Sunset', style: TextStyle(fontWeight: FontWeight.bold),),
+                            Text('${formatEpochTimeToTime(currentData['sys']['sunset'], currentData['timezone'])}', style: TextStyle(fontWeight: FontWeight.bold),),
+                            SvgPicture.asset("assets/svgs/sunset.svg", width: 70, height: 70,)
+                          ],
+                        ),
+                      ),
+                      )
+                    ],
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  ),
+                ),
+                const SizedBox(height: 10,),
+                Container(
+                  width: MediaQuery.of(context).size.width - 20,
+                  padding: const EdgeInsets.only(top: 10, bottom: 10, left: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Row(
+                      //   children: [
+                      //     SvgPicture.asset('assets/svgs/aqi.svg', width: 15),
+                      //     Text(' AQI: $aqiIndex')
+                      //   ],
+                      // ),
+                      Row(
+                        children: [
+                          SvgPicture.asset('assets/svgs/pressure.svg', width: 15,),
+                          Text(' Pressure: ${currentData['visibility']}nPa'),
+                        ],
+                      ),
+                      // Row(
+                      //   children: [
+                      //     SvgPicture.asset('assets/svgs/cloudiness.svg', width: 15,),
+                      //     Text(' Mây: ${currentData['clouds']['all']}%'),
+                      //   ],
+                      // ),
+                      Row(
+                        children: [
+                          SvgPicture.asset('assets/svgs/visibility.svg', width: 15,),
+                          Text(' Visibility: ${currentData['visibility']}m'),
+                        ],
+                      ),
+
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10,),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('  '),
+                        SvgPicture.asset('assets/svgs/openweather.svg', height: 15,),
+                        const Text(' OpenWeatherMap', style: TextStyle(fontSize: 10, color: Colors.black54),)
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Text('Updated at ${formatEpochTimeToTime(currentData['dt'], currentData['timezone'])}   ', style: TextStyle(fontSize: 10),),
+                      ],
+                    )
+
+                  ],
+                )
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

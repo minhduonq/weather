@@ -93,6 +93,10 @@ flutter:
     - assets/svgs/sunrise.svg
     - assets/svgs/uvindex.svg
     - assets/svgs/openweather.svg
+    - assets/svgs/AI.png
+    - assets/svgs/map.png
+    - assets/svgs/o.png
+    - assets/svgs/detail.png
     - assets/svgs/wind.svg
     - assets/svgs/humidity.svg
     - assets/svgs/pressure.svg
