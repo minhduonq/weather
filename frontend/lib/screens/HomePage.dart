@@ -17,6 +17,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Position? currentPosition;
+
   late bool servicePermission = false;
   late LocationPermission permission;
 
@@ -77,7 +78,6 @@ class _HomePageState extends State<HomePage> {
     //   'http://192.168.1.13:3002/weather/detail?lat=$lat&lon=$lon',
     // );
     final uri =
-        'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$API_KEY&units=metric';
     // final response = await http.get(Uri.parse(detail));
     try {
       final response = await http.get(Uri.parse(uri));
@@ -129,7 +129,6 @@ class _HomePageState extends State<HomePage> {
     }
 
     final hourly =
-        'https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=$lat&lon=$lon&appid=$API_KEY&cnt=24&units=metric';
     final response2 = await http.get(Uri.parse(hourly));
     if (response2.statusCode == 200) {
       final data = json.decode(response2.body);
@@ -163,7 +162,6 @@ class _HomePageState extends State<HomePage> {
     }
 
     final daily =
-        'http://api.openweathermap.org/data/2.5/forecast/daily?lat=$lat&lon=$lon&cnt=7&appid=$API_KEY&units=metric';
     final response3 = await http.get(Uri.parse(daily));
     if (response3.statusCode == 200) {
       final data = json.decode(response3.body);
