@@ -60,6 +60,7 @@ class DatabaseHelper {
       sunrise INTEGER,
       sunset INTEGER,
       description TEXT,
+      main TEXT,
       updatedAt TEXT,
       FOREIGN KEY (location_id) REFERENCES location(id) ON DELETE CASCADE
     );
@@ -195,6 +196,80 @@ class DatabaseHelper {
       'location', // Tên bảng
       where: 'id = ?', // Điều kiện xóa
       whereArgs: [id], // Tham số
+    );
+  }
+
+  // Get location by ID
+  Future<List<Map<String, dynamic>>> getLocationById(int id) async {
+    final db = await database;
+    return await db.query(
+      'location',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+// Get weather data by location ID
+  Future<List<Map<String, dynamic>>> getWeatherDataByLocationId(int locationId) async {
+    final db = await database;
+    return await db.query(
+      'weather_data',
+      where: 'location_id = ?',
+      whereArgs: [locationId],
+      orderBy: 'updatedAt DESC', // Get most recent first
+      limit: 1,
+    );
+  }
+
+// Get hourly data by location ID
+  Future<List<Map<String, dynamic>>> getHourlyDataByLocationId(int locationId) async {
+    final db = await database;
+    return await db.query(
+      'hourly_data',
+      where: 'location_id = ?',
+      whereArgs: [locationId],
+      orderBy: 'time ASC', // Order by time
+    );
+  }
+
+// Get daily data by location ID
+  Future<List<Map<String, dynamic>>> getDailyDataByLocationId(int locationId) async {
+    final db = await database;
+    return await db.query(
+      'daily_data',
+      where: 'location_id = ?',
+      whereArgs: [locationId],
+      orderBy: 'time ASC', // Order by time
+    );
+  }
+
+// Xóa hourly data theo location_id
+  Future<int> deleteHourlyDataByLocationId(int locationId) async {
+    final db = await database;
+    return await db.delete(
+      'hourly_data',
+      where: 'location_id = ?',
+      whereArgs: [locationId],
+    );
+  }
+
+// Xóa daily data theo location_id
+  Future<int> deleteDailyDataByLocationId(int locationId) async {
+    final db = await database;
+    return await db.delete(
+      'daily_data',
+      where: 'location_id = ?',
+      whereArgs: [locationId],
+    );
+  }
+
+// Xóa weather data theo location_id
+  Future<int> deleteWeatherDataByLocationId(int locationId) async {
+    final db = await database;
+    return await db.delete(
+      'weather_data',
+      where: 'location_id = ?',
+      whereArgs: [locationId],
     );
   }
 }
