@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/screens/HomePage.dart';
-import 'package:frontend/screens/weather_stogare.dart';
+import 'package:frontend/screens/SearchPlace.dart'; // Import màn hình SearchPlace
 
 void main() {
   runApp(const MyApp());
@@ -14,7 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      home: SearchPlace(),
     );
   }
 }
