@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:viewportWidth="64"
+    android:viewportHeight="64"
+    android:width="64dp"
+    android:height="64dp">
+
+    <!-- Đường ngang 1 -->
+    <path
+        android:pathData="M17 25h30"
+        android:strokeColor="#EFEFEF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeMiterLimit="10" />
+
+    <!-- Đường ngang 2 -->
+    <path
+        android:pathData="M17 32h30"
+        android:strokeColor="#EFEFEF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeMiterLimit="10" />
+
+    <!-- Đường ngang 3 -->
+    <path
+        android:pathData="M17 39h30"
+        android:strokeColor="#EFEFEF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeMiterLimit="10" />
+</vector>

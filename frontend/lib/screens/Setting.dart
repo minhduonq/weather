@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import '../services/constants.dart';
+import '../services/widget_service.dart';
 
 class Setting extends StatefulWidget {
   const Setting({Key? key}) : super(key: key);
@@ -87,23 +88,22 @@ class _Setting extends State<Setting> {
                   )
               ),
             ),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.white,
-              ),
-              child: ListTile(
-                title: Text('Display Widget on main screen'),
-                trailing: Switch(
-                  value: isWidgetDisplayed, // Biến trạng thái
-                  onChanged: (bool value) {
-                    setState(() {
-                      isWidgetDisplayed = value; // Cập nhật trạng thái
-                    });
-                  },
-                ),
-              ),
-            ),
+            // Container(
+            //   decoration: BoxDecoration(
+            //     borderRadius: BorderRadius.circular(10),
+            //     color: Colors.white,
+            //   ),
+            //   child: ListTile(
+            //     leading: Icon(Icons.refresh),
+            //     title: Text('Update Widget'),
+            //     onTap: () async {
+            //       await WidgetService.updateWidgetData();
+            //       ScaffoldMessenger.of(context).showSnackBar(
+            //         SnackBar(content: Text('Widget updated successfully')),
+            //       );
+            //     },
+            //   ),
+            // ),
             SizedBox(height: 10,),
             Container(
               decoration: BoxDecoration(

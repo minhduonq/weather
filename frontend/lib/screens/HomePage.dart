@@ -1,13 +1,20 @@
+
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:frontend/screens/manage_location.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:convert';
-import 'package:frontend/services/database.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../services/constants.dart';
+import '../services/widget_service.dart';
+import '../services/weather_service.dart';
+import '../services/formatting_service.dart';
+import '../services/location_service.dart';
+import '../services/database.dart';
+
 import 'LocationManage.dart';
 import 'SearchPlace.dart';
 import 'Setting.dart';
@@ -19,1052 +26,300 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  InAppWebViewController? _webViewController;
 
-  late bool servicePermission = false;
-  late LocationPermission permission;
+  // Getter methods to access data from services
+  Map<String, dynamic> get currentData => WeatherService.currentData;
+  Map<String, dynamic> get hourlyData => WeatherService.hourlyData;
+  Map<String, dynamic> get dailyData => WeatherService.dailyData;
 
   @override
   void initState() {
     super.initState();
-    //deleteWeatherDBIfDebug(); // Gọi hàm xóa DB nếu đang debug
-    _requestLocationPermission();
+    _initializeApp();
   }
 
-  Future<void> _requestLocationPermission() async {
-    servicePermission = await Geolocator.isLocationServiceEnabled();
-    if (!servicePermission) {
-      print('Service disable');
+  Future<void> _initializeApp() async {
+    if (KeyLocation != null) {
+      // If we already have a location (from drawer selection), load its data
+      await WeatherService.loadWeatherData(KeyLocation!.latitude, KeyLocation!.longitude);
+      await WeatherService.getLocationName(KeyLocation!.latitude, KeyLocation!.longitude);
+    } else {
+      // Otherwise request location permission
+      await _requestLocationAndLoadData();
     }
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.deniedForever) {
-      // Handle case where user has permanently denied location permission
-      print('Location permission denied permanently');
-    }
-    if (permission == LocationPermission.whileInUse ||
-        permission == LocationPermission.always) {
-      _getCurrentLocation();
-    }
+    // Update UI after data is loaded
+    setState(() {});
   }
 
-  // Future<void> _getCurrentLocation() async {
-  //   Position position = await Geolocator.getCurrentPosition();
-  //   setState(() {
-  //     currentPosition = position;
-  //   });
-  //   if (KeyLocation == null) {
-  //     KeyLocation = currentPosition;
-  //   }
-  //   fetchWeatherData(KeyLocation!.latitude, KeyLocation!.longitude);
-  //   // getAQIIndex(KeyLocation!.latitude, KeyLocation!.longitude);
-  //   getLocationName(KeyLocation!.latitude, KeyLocation!.longitude);
-  //   print(KeyLocation!.latitude);
-  //   print(KeyLocation!.longitude);
-  // }
+  Future<void> _requestLocationAndLoadData() async {
+    bool hasPermission = await LocationService.requestLocationPermission();
+    if (hasPermission) {
+      await _getCurrentLocation();
+    }
+  }
 
   Future<void> _getCurrentLocation() async {
-    Position position = await Geolocator.getCurrentPosition();
-    setState(() {
-      currentPosition = position;
-    });
-    if (KeyLocation == null) {
-      KeyLocation = currentPosition;
+    Position? position = await LocationService.getCurrentLocation();
+    if (position != null) {
+      setState(() {
+        currentPosition = position;
+      });
+      if (KeyLocation == null) {
+        KeyLocation = currentPosition;
+      }
+
+      // Load weather data
+      await WeatherService.loadWeatherData(KeyLocation!.latitude, KeyLocation!.longitude);
+      await WeatherService.getLocationName(KeyLocation!.latitude, KeyLocation!.longitude);
+      print(KeyLocation!.latitude);
+      print(KeyLocation!.longitude);
+
+      // Update UI
+      setState(() {});
     }
-
-    // Use our new method that tries database first, then API
-    await loadWeatherData(KeyLocation!.latitude, KeyLocation!.longitude);
-
-    getLocationName(KeyLocation!.latitude, KeyLocation!.longitude);
-    print(KeyLocation!.latitude);
-    print(KeyLocation!.longitude);
   }
 
-  Map<String, dynamic> currentData = {};
-  Map<String, dynamic> hourlyData = {};
-  Map<String, dynamic> dailyData = {};
-  Map<String, dynamic> weatherName = {};
-  Map<String, dynamic> weatherInfo = {};
+  void _updateMap() {
+    if (_webViewController != null && KeyLocation != null) {
+      _webViewController!.evaluateJavascript(
+        source: '''updateMap(${KeyLocation!.latitude}, ${KeyLocation!.longitude});''',
+      );
+      print("Map updated to: ${KeyLocation!.latitude}, ${KeyLocation!.longitude}");
+    }
+  }
 
-  Future<void> getLocationName(double lat, double lon) async {
-    final key = HereAPI;
-    final lat = currentPosition?.latitude;
-    final lon = currentPosition?.longitude;
-    final url =
-        'https://revgeocode.search.hereapi.com/v1/revgeocode?at=$lat,$lon&apiKey=$key';
+  Future<void> _refreshData() async {
+    if (!mounted) return;
 
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      setState(() {
-        weatherName = json.decode(utf8.decode(response.bodyBytes));
-      });
+    // If at a specific location
+    if (KeyLocation != null) {
+      // Load new data from API
+      await WeatherService.fetchWeatherData(KeyLocation!.latitude, KeyLocation!.longitude);
+
+      // Update location name if needed
+      if (LocationName != InitialName) {
+        await WeatherService.getLocationName(KeyLocation!.latitude, KeyLocation!.longitude);
+      }
+      _updateMap();
+      // Update UI
+      setState(() {});
     } else {
-      throw Exception('Fail to load Location name');
-    }
-    if(LocationName == '') {
-      LocationName = weatherName.isNotEmpty ? weatherName["items"][0]["address"]["city"] : "";
-    }
-    InitialName = weatherName.isNotEmpty ? weatherName["items"][0]["address"]["city"] : "";
-  }
-
-  Future<void> fetchWeatherData(double lat, double lon) async {
-        final uri =
-        'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$API_KEY&units=$type';
-    try {
-      final response = await http.get(Uri.parse(uri));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        final locationData = {
-          'id': data['id'], // ID từ API
-          'name': LocationName,
-          'latitude': data['coord']['lat'],
-          'longitude': data['coord']['lon'],
-        };
-        // Lưu vào SQLite
-        final dbHelper = DatabaseHelper();
-        await dbHelper.insertLocation(locationData);
-        // Chuyển đổi dữ liệu từ API thành Map
-        final weatherData = {
-          'location_id': data['id'], // Thay bằng ID của location tương ứng
-          'temperature': data['main']['temp'],
-          'feelsLike': data['main']['feels_like'],
-          'maxTemp': data['main']['temp_max'],
-          'minTemp': data['main']['temp_min'],
-          'pressure': data['main']['pressure'],
-          'humidity': data['main']['humidity'],
-          'windSpeed': data['wind']['speed'],
-          'icon': data['weather'][0]['icon'],
-          'description': data['weather'][0]['description'],
-          'sunrise': data['sys']['sunrise'],
-          'sunset': data['sys']['sunset'],
-          'cloud': data['clouds']['all'],
-          'visibility': data['visibility'],
-          'timeZone': data['timezone'],
-          'updatedAt': DateTime.now().toIso8601String(),
-        };
-
-        await dbHelper.insertWeatherData(weatherData);
-        setState(() {
-          //currentData = json.decode(response.body);
-          currentData = data;
-        });
-      } else {
-        setState(() {
-          print('Failed to load weather data');
-        });
-      }
-    } catch (e) {
-      setState(() {
-        print('Error: $e');
-      });
-    }
-
-    final hourly =
-        'https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=$lat&lon=$lon&appid=$API_KEY&cnt=24&units=$type';
-    final response2 = await http.get(Uri.parse(hourly));
-    if (response2.statusCode == 200) {
-      final data = json.decode(response2.body);
-
-      // Lấy location_id từ API
-      final locationId = data['city']['id'];
-
-      // Lấy danh sách hourly data
-      final List<dynamic> hourlyList = data['list'];
-
-      //Lưu từng mục vào bảng hourly_data
-      final dbHelper = DatabaseHelper();
-      for (var hourly in hourlyList) {
-        final hourlyData = {
-          'location_id': locationId,
-          'time': hourly['dt'],
-          'temperatureMax': hourly['main']['temp_max'],
-          'temperatureMin': hourly['main']['temp_min'],
-          'humidity': hourly['main']['humidity'],
-          'icon': hourly['weather'][0]['icon'],
-        };
-
-        await dbHelper.insertHourlyData(hourlyData);
-      }
-
-      setState(() {
-        hourlyData = data;
-      });
-    } else {
-      throw Exception('Failed to load weather data hourly');
-    }
-
-    final daily =
-        'http://api.openweathermap.org/data/2.5/forecast/daily?lat=$lat&lon=$lon&cnt=7&appid=$API_KEY&units=$type';
-    final response3 = await http.get(Uri.parse(daily));
-    if (response3.statusCode == 200) {
-      final data = json.decode(response3.body);
-
-      // Lấy location_id từ API
-      final locationId = data['city']['id'];
-
-      // Lấy danh sách daily data
-      final List<dynamic> dailyList = data['list'];
-
-      // Lưu từng mục vào bảng daily_data
-      final dbHelper = DatabaseHelper();
-      for (var daily in dailyList) {
-        final dailyData = {
-          'location_id': locationId,
-          'time': daily['dt'], // Thời gian dự báo
-          'temperatureMax': daily['temp']['max'], // Nhiệt độ cao nhất
-          'temperatureMin': daily['temp']['min'], // Nhiệt độ thấp nhất
-          'humidity': daily['humidity'], // Độ ẩm
-          'icon': daily['weather'][0]['icon'], // Biểu tượng thời tiết
-        };
-
-        await dbHelper.insertDailyData(dailyData);
-      }
-
-      setState(() {
-        dailyData = data;
-      });
-    } else {
-      throw Exception('Failed to load weather data daily');
+      // If location not yet determined, get current location
+      await _getCurrentLocation();
+      _updateMap();
     }
   }
 
-  // Method to load weather data from database
-  Future<void> loadWeatherDataFromDatabase(int locationId) async {
-    final dbHelper = DatabaseHelper();
-
-    // Load location data
-    final locations = await dbHelper.getLocationById(locationId);
-    if (locations.isNotEmpty) {
-      final location = locations.first;
-
-      // Load current weather data
-      final weatherDataList = await dbHelper.getWeatherDataByLocationId(locationId);
-      if (weatherDataList.isNotEmpty) {
-        final weatherData = weatherDataList.first;
-        setState(() {
-          // Convert database data to format expected by UI
-          currentData = {
-            'id': locationId,
-            'name': location['name'],
-            'coord': {
-              'lat': location['latitude'],
-              'lon': location['longitude']
-            },
-            'main': {
-              'temp': weatherData['temperature'],
-              'feels_like': weatherData['feelsLike'],
-              'temp_max': weatherData['maxTemp'],
-              'temp_min': weatherData['minTemp'],
-              'pressure': weatherData['pressure'],
-              'humidity': weatherData['humidity'],
-              'sea_level': weatherData['pressure'] // Using pressure as sea level for simplicity
-            },
-            'wind': {
-              'speed': weatherData['windSpeed']
-            },
-            'clouds': {
-              'all': weatherData['cloud']
-            },
-            'sys': {
-              'sunrise': weatherData['sunrise'],
-              'sunset': weatherData['sunset']
-            },
-            'weather': [
-              {
-                'description': weatherData['description'],
-                'icon': weatherData['icon']
-              }
-            ],
-            'visibility': weatherData['visibility'],
-            'timezone': weatherData['timeZone'],
-            'dt': DateTime.now().millisecondsSinceEpoch ~/ 1000 // Current time as epoch
-          };
-        });
-      }
-
-      // Load hourly data
-      final hourlyDataList = await dbHelper.getHourlyDataByLocationId(locationId);
-      if (hourlyDataList.isNotEmpty) {
-        setState(() {
-          // Convert database data to format expected by UI
-          hourlyData = {
-            'city': {
-              'id': locationId,
-              'name': location['name'],
-              'coord': {
-                'lat': location['latitude'],
-                'lon': location['longitude']
-              }
-            },
-            'list': hourlyDataList.map((hourly) => {
-              'dt': hourly['time'],
-              'main': {
-                'temp': (hourly['temperatureMax'] + hourly['temperatureMin']) / 2, // Average temp
-                'temp_max': hourly['temperatureMax'],
-                'temp_min': hourly['temperatureMin'],
-                'humidity': hourly['humidity']
-              },
-              'weather': [
-                {
-                  'icon': hourly['icon']
-                }
-              ],
-              'pop': 0.0 // Default value for precipitation probability
-            }).toList()
-          };
-        });
-      }
-
-      // Load daily data
-      final dailyDataList = await dbHelper.getDailyDataByLocationId(locationId);
-      if (dailyDataList.isNotEmpty) {
-        setState(() {
-          // Convert database data to format expected by UI
-          dailyData = {
-            'city': {
-              'id': locationId,
-              'name': location['name'],
-              'coord': {
-                'lat': location['latitude'],
-                'lon': location['longitude']
-              }
-            },
-            'list': dailyDataList.map((daily) => {
-              'dt': daily['time'],
-              'temp': {
-                'max': daily['temperatureMax'],
-                'min': daily['temperatureMin']
-              },
-              'humidity': daily['humidity'],
-              'weather': [
-                {
-                  'icon': daily['icon']
-                }
-              ],
-              'pop': 0.0 // Default value for precipitation probability
-            }).toList()
-          };
-        });
-      }
-    }
-  }
-
-// Helper method to try loading from database first, then fetch from API if needed
-  Future<void> loadWeatherData(double lat, double lon) async {
-    try {
-      // First try to find a nearby location in the database
-      final dbHelper = DatabaseHelper();
-      final locations = await dbHelper.getAllLocations();
-
-      int? locationId;
-      for (var location in locations) {
-        double dLat = location['latitude'] - lat;
-        double dLon = location['longitude'] - lon;
-        // If location is very close (within ~1km), use it
-        if (dLat * dLat + dLon * dLon < 0.0001) {
-          locationId = location['id'];
-          break;
-        }
-      }
-
-      if (locationId != null) {
-        // Load from database
-        await loadWeatherDataFromDatabase(locationId);
-
-        // Check if data is recent (less than 1 hour old)
-        final weatherDataList = await dbHelper.getWeatherDataByLocationId(locationId);
-        if (weatherDataList.isNotEmpty) {
-          final updatedAt = DateTime.parse(weatherDataList.first['updatedAt']);
-          final now = DateTime.now();
-          final difference = now.difference(updatedAt);
-
-          // If data is recent, return without fetching from API
-          if (difference.inHours < 1) {
-            return;
-          }
-        }
-      }
-
-      // If no recent data found in database, fetch from API
-      await fetchWeatherData(lat, lon);
-    } catch (e) {
-      print('Error loading weather data: $e');
-      // If all else fails, fetch from API
-      await fetchWeatherData(lat, lon);
-    }
-  }
-
-
-
-  Future<void> printDatabaseData() async {
-    final dbHelper = DatabaseHelper();
-
-    // Lấy dữ liệu từ bảng location
-    final locations = await dbHelper.getAllLocations();
-    print('Locations: $locations');
-
-    // Lấy dữ liệu từ bảng weather_data
-    final weatherData = await dbHelper.getAllWeatherData();
-    print('Weather Data: $weatherData');
-
-    // Lấy dữ liệu từ bảng hourly_data
-    final hourlyData = await dbHelper.getAllHourlyData();
-    print('Hourly Data: $hourlyData');
-
-    // Lấy dữ liệu từ bảng daily_data
-    final dailyData = await dbHelper.getAllDailyData();
-    print('Daily Data: $dailyData');
-  }
-
-  String formatEpochTimeToTime(int epochTime, int timezoneOffsetInSeconds) {
-    // Cộng thêm timezone offset để chuyển sang giờ địa phương
-    DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(
-      (epochTime + timezoneOffsetInSeconds) * 1000,
-      isUtc: true, // vì thời gian epoch từ API là UTC
-    );
-
-    String formattedTime =
-        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    return formattedTime;
-  }
-
-  String getDayName(int epochTime) {
-    DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(epochTime * 1000);
-    List<String> weekdays = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    return weekdays[dateTime.weekday - 1];
-  }
-
-  String getWeatherIconPath(String iconCode) {
-    return 'assets/svgs/$iconCode.svg';
-  }
-
-  void getDataForSelectedPlace(Map<String, dynamic> place) {
-    LocationName = place['name'];
-    final lat = place['latitude'];
-    final lon = place['longitude'];
-    fetchWeatherData(lat, lon);
-    // getLocationName(lat, lon);
-  }
-
-  String capitalize(String text) {
-    if (text.isEmpty) return text;
-    return text[0].toUpperCase() + text.substring(1);
-  }
-
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primaryColor: Color(0xFF66CEED),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Color(0xFF66CEED),
+          elevation: 0,
+        ),
+      ),
       home: Scaffold(
         appBar: AppBar(
-          title: Text('$LocationName'),
+          title: Text('$LocationName', style: TextStyle(color: Colors.white)),
         ),
-        backgroundColor: Colors.white,
-        drawer: Drawer(
-          backgroundColor: Colors.grey[200],
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        onPressed: () {},
-                        icon: Image.asset(
-                          'assets/svgs/AI.png',
-                          width: 60,
-                          height: 60,
-                        ),
-                        iconSize: 45,
-                      ),
-                      SizedBox(width: 16),
-                      IconButton(
-                        onPressed: () {
-                          Navigator.of(context).push(MaterialPageRoute(builder: (context) => Setting()));
-                        },
-                        icon: Image.asset(
-                          'assets/svgs/setting.png',
-                          width: 35,
-                          height: 35,
-                        ),
-                        iconSize: 25,
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    '★ Favourite Places',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                ListTile(
-                    contentPadding: EdgeInsets.only(left: 52.0),
-                    title: Text('$InitialName'),
-                    onTap: () {
-                      setState(() {
-                        LocationName = InitialName;
-                        KeyLocation = null;
-                        Navigator.of(context).push(MaterialPageRoute(builder: (context) =>  HomePage()));
-                      });
-                    }
-                ),
-                ListTile(
-                    leading: Icon(Icons.location_searching_sharp),
-                    title: Text('Other Places', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (context) =>  SearchPlace()));
-                    }
-                ),
-                ...selectedPlaces.map((place) {
-                  return ListTile(
-                    contentPadding: EdgeInsets.only(left: 52.0),
-                    title: Text(place['name']),
-                    onTap: () {
-                      // Thực hiện hành động khi bấm vào địa điểm, ví dụ hiển thị thông tin chi tiết
-                      LocationName = OfficialName(place['name']);
-                      KeyLocation = Position(
-                        latitude: place['latitude'],
-                        longitude: place['longitude'],
-                        timestamp: DateTime.now(),
-                        accuracy: 0.0,
-                        altitude: 0.0,
-                        heading: 0.0,
-                        speed: 0.0,
-                        speedAccuracy: 0.0,
-                        altitudeAccuracy: 0.0,
-                        headingAccuracy: 0.0,
-                      );
-                      Navigator.of(context).push(MaterialPageRoute(builder: (context) => HomePage()));
-                    },
-                  );
-                }).toList(),
-                ListTile(
-                  leading: Icon(Icons.notes_outlined),
-                  title: Text('Place Management', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  onTap: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => LocationManage()));
-                  },
-                ),
-                Divider(color: Colors.black54,),
-              ],
-            ),
-          ),
-        ),
-        body:
-        currentData.isEmpty
+        backgroundColor: Color(0xFF66CEED),
+        drawer: _buildDrawer(),
+        body: currentData.isEmpty
             ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
+            : _buildMainContent(),
+      ),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return Drawer(
+      backgroundColor: Colors.grey[200],
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drawer header with AI and settings buttons
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    onPressed: () {},
+                    icon: Image.asset('assets/svgs/AI.png', width: 60, height: 60),
+                    iconSize: 45,
+                  ),
+                  SizedBox(width: 16),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => Setting())
+                      );
+                    },
+                    icon: Image.asset('assets/svgs/setting.png', width: 35, height: 35),
+                    iconSize: 25,
+                  ),
+                ],
+              ),
+            ),
+
+            // Favorite places section
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                '★ Favourite Places',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+
+            // Initial location
+            ListTile(
+                contentPadding: EdgeInsets.only(left: 52.0),
+                title: Text('$InitialName'),
+                onTap: () {
+                  setState(() {
+                    LocationName = InitialName;
+                    KeyLocation = null;
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => HomePage()
+                    ));
+                  });
+                }
+            ),
+
+            // Other places
+            ListTile(
+                leading: Icon(Icons.location_searching_sharp),
+                title: Text('Other Places',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                ),
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => SearchPlace()
+                  ));
+                }
+            ),
+
+            // List of saved locations
+            _buildSavedLocationsList(),
+
+            // Place management
+            ListTile(
+              leading: Icon(Icons.notes_outlined),
+              title: Text('Place Management',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+              ),
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => ManageLocationsScreen()
+                ));
+              },
+            ),
+
+            Divider(color: Colors.black54),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSavedLocationsList() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: DatabaseHelper().getAllLocations(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator(strokeWidth: 2));
+        } else if (snapshot.hasError) {
+          return ListTile(
+            contentPadding: EdgeInsets.only(left: 52.0),
+            title: Text("Error loading locations"),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return ListTile(
+            contentPadding: EdgeInsets.only(left: 52.0),
+            title: Text("No saved locations"),
+          );
+        } else {
+          return Column(
+            children: snapshot.data!.map((location) {
+              // Skip current location if it matches InitialName
+              if (location['name'] == InitialName) {
+                return SizedBox.shrink();
+              }
+
+              return ListTile(
+                contentPadding: EdgeInsets.only(left: 52.0),
+                title: Text(location['name']),
+                onTap: () {
+                  setState(() {
+                    LocationName = location['name'];
+                    KeyLocation = Position(
+                      latitude: location['latitude'],
+                      longitude: location['longitude'],
+                      timestamp: DateTime.now(),
+                      accuracy: 0.0,
+                      altitude: 0.0,
+                      heading: 0.0,
+                      speed: 0.0,
+                      speedAccuracy: 0.0,
+                      altitudeAccuracy: 0.0,
+                      headingAccuracy: 0.0,
+                    );
+                  });
+
+                  // Load data for this location before navigating
+                  WeatherService.loadWeatherData(
+                      location['latitude'],
+                      location['longitude']
+                  ).then((_) {
+                    _updateMap();
+                    setState(() {}); // Update UI with new data
+                    Navigator.pop(context); // Close drawer
+                  });
+                },
+              );
+            }).toList(),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildMainContent() {
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      color: Colors.white,
+      backgroundColor: Colors.lightBlueAccent,
+      child: SingleChildScrollView(
+        physics: AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height -
+                AppBar().preferredSize.height - MediaQuery.of(context).padding.top,
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Icon của bạn
-                    // Image.asset(
-                    //   'weather/assets/location.png', // Đường dẫn tới icon của bạn
-                    //   width: 15, // Kích thước icon (có thể điều chỉnh)
-                    //   height: 15, // Kích thước icon (có thể điều chỉnh)
-                    // ),
-                    SizedBox(width: 4), // Khoảng cách giữa icon và text
-                    // Text "Hà Nội"
-                    Text(
-                      '${LocationName}',
-                      style: TextStyle(fontSize: 19),
-                    ),
-                  ],
-                ),
-                Text(
-                  '${currentData['main']['temp']}\u00B0',
-                  style: TextStyle(fontSize: 17),
-                ),
-                Text(
-                  'Feel like ${currentData['main']['feels_like']}\u00B0',
-                ),
-                Text(
-                  'L: ${currentData['main']['temp_min']} H: ${currentData['main']['temp_max']}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                _buildCurrentWeather(),
                 SizedBox(height: 20),
-
-                //Hourly Forecast
-                Container(
-                  width: MediaQuery.of(context).size.width - 20,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.white,
-                  ),
-                  child: ListTile(
-                    title: Text(
-                      currentData.isNotEmpty
-                          ? capitalize(
-                        currentData['weather'][0]['description'],
-                      )
-                          : '',
-                    ),
-                    subtitle: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: List.generate(
-                          (hourlyData['list']?.length ?? 0),
-                              (index) {
-                            double popValue =
-                            (hourlyData['list'][index]['pop'] ?? 0)
-                                .toDouble();
-                            int pop1 = (popValue * 100).round();
-                            return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    '${formatEpochTimeToTime(hourlyData['list'][index]['dt'], currentData['timezone'])}',
-                                  ),
-                                  SvgPicture.asset(
-                                    getWeatherIconPath(
-                                      hourlyData['list'][index]['weather'][0]['icon'],
-                                    ),
-                                    width: 50,
-                                    height: 50,
-                                  ),
-                                  Text(
-                                    '${hourlyData['list'][index]['main']['temp']}\u00B0',
-                                  ),
-                                  Row(
-                                    children: [
-                                      SvgPicture.asset(
-                                        "assets/svgs/pop.svg",
-                                        width: 15,
-                                        height: 15,
-                                      ),
-                                      Text('$pop1%'),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                _buildHourlyForecast(),
                 SizedBox(height: 10),
-                Container(
-                  width: MediaQuery.of(context).size.width - 20,
-                  padding: EdgeInsets.symmetric(horizontal: 0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ListTile(
-                    title: Text('Daily Forecast'),
-                    subtitle: Column(
-                      children: List.generate(
-                        (dailyData['list'] as List?)?.length ?? 0,
-                            (index) {
-                          final dayName = getDayName(
-                            dailyData['list'][index]['dt'],
-                          );
-                          var maxTemp = double.parse(
-                            dailyData['list'][index]['temp']['max']
-                                .toString(),
-                          );
-                          var minTemp = double.parse(
-                            dailyData['list'][index]['temp']['min']
-                                .toString(),
-                          );
-                          final weatherIcon =
-                          dailyData['list'][index]['weather'][0]['icon'];
-                          var pop = double.parse(
-                            dailyData['list'][index]['pop'].toString(),
-                          );
-                          int max = maxTemp.round();
-                          int min = minTemp.round();
-                          int pop1 = (pop * 100).round();
-                          return Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width:
-                                    (MediaQuery.of(context,).size.width -20) /10 *2.8,
-                                    child: Text(
-                                      '$dayName',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    width:
-                                    (MediaQuery.of( context,).size.width - 20) / 10 * 1.5,
-                                    child: Row(
-                                      children: [
-                                        SvgPicture.asset(
-                                          'assets/svgs/pop.svg',
-                                          width: 15,
-                                        ),
-                                        Text(' $pop1%'),
-                                      ],
-                                    ),
-                                  ),
-                                  Container(
-                                    width:
-                                    (MediaQuery.of( context,).size.width - 20) / 10 *1.8,
-                                    child: SvgPicture.asset(
-                                      getWeatherIconPath(weatherIcon),
-                                      width: 35,
-                                      height: 35,
-                                    ),
-                                  ),
-                                  Container(
-                                    //width: (MediaQuery.of(context).size.width-20)*,
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: EdgeInsets.all(5),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          width:
-                                          (MediaQuery.of(
-                                            context,
-                                          ).size.width -
-                                              20) /
-                                              10 *
-                                              1.2,
-                                          child: Text(
-                                            '$max\u00B0',
-                                            style: TextStyle(
-                                              fontWeight:
-                                              FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: EdgeInsets.all(5),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          width:
-                                          (MediaQuery.of( context,).size.width -20) /10 *1.2,
-                                          child: Text('$min\u00B0',style: TextStyle(fontWeight:FontWeight.bold,
-                                          ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
+                _buildDailyForecast(),
                 SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Box 1: Humidity
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.only(
-                            right: 8,
-                          ), // Khoảng cách giữa 2 box
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.blue.withOpacity(0.2), // màu viền
-                              width: 1,
-                            ),
-                          ),
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text(
-                                'Humidity',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                '${currentData['main']['humidity']}%',
-                                style: const TextStyle(fontSize: 24),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // Box 2: Sea Level
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          decoration: BoxDecoration(
-
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.blue.withOpacity(0.2),
-                              width: 1,
-                            ),
-                          ),
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text(
-                                'Sea Level',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                '${currentData['main']['sea_level']}',
-                                style: const TextStyle(fontSize: 24),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildWeatherDetails(),
                 SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Box 1: Cloudiness
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.only(
-                            right: 8,
-                          ), // Khoảng cách giữa 2 box
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.blue.withOpacity(0.2), // màu viền
-                              width: 1,
-                            ),
-                          ),
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text(
-                                'Cloud',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                '${currentData['clouds']['all']}%',
-                                style: const TextStyle(fontSize: 24),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // Box 2: Sea Level
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          decoration: BoxDecoration(
-
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.blue.withOpacity(0.2),
-                              width: 1,
-                            ),
-                          ),
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text(
-                                'Wind Speed',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                '${currentData['wind']['speed']}km/h',
-                                style: const TextStyle(fontSize: 24),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildWeatherMap(),
                 SizedBox(height: 10),
-                Container(
-                  width: MediaQuery.of(context).size.width - 20,
-                  height: 300, // Chiều cao của bản đồ
-                  decoration: BoxDecoration(
-                    // border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: InAppWebView(
-                    initialFile: "assets/weather_map.html",
-                    onWebViewCreated: (controller) async {
-                      if (KeyLocation != null) {
-                        await Future.delayed(
-                          Duration(seconds: 1),
-                        ); // đảm bảo webView đã load xong
-                        controller.evaluateJavascript(
-                          source: '''
-      updateMap(${KeyLocation!.latitude}, ${KeyLocation!.longitude});
-    ''',
-                        );
-                      }
-                    },
-                  ),
-                ),
+                _buildSunriseSunset(),
                 SizedBox(height: 10),
-                Container(
-                  width: MediaQuery.of(context).size.width - 20,
-                  padding: EdgeInsets.symmetric(horizontal: 0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-
-                  ),
-                  child: Row(
-
-                    children: [
-                      Expanded(child: Container(
-                        padding: EdgeInsets.only(top: 10, bottom: 10),
-                        width: (MediaQuery.of(context).size.width - 20)/2,
-                        child: Column(
-                          children: [
-                            Text('Sunriset', style: TextStyle(fontWeight: FontWeight.bold),),
-                            Text('${formatEpochTimeToTime(currentData['sys']['sunrise'], currentData['timezone'])}',style: TextStyle(fontWeight: FontWeight.bold)),
-                            SvgPicture.asset("assets/svgs/sunrise.svg", width: 70, height: 70),
-
-                          ],
-                        ),
-                      ),
-                      ),
-                      Expanded(child: Container(
-                        width: (MediaQuery.of(context).size.width - 20)/2,
-                        padding: EdgeInsets.only(top: 10, bottom: 10),
-                        child: Column(
-                          children: [
-                            Text('Sunset', style: TextStyle(fontWeight: FontWeight.bold),),
-                            Text('${formatEpochTimeToTime(currentData['sys']['sunset'], currentData['timezone'])}', style: TextStyle(fontWeight: FontWeight.bold),),
-                            SvgPicture.asset("assets/svgs/sunset.svg", width: 70, height: 70,)
-                          ],
-                        ),
-                      ),
-                      )
-                    ],
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  ),
-                ),
-                const SizedBox(height: 10,),
-                Container(
-                  width: MediaQuery.of(context).size.width - 20,
-                  padding: const EdgeInsets.only(top: 10, bottom: 10, left: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Row(
-                      //   children: [
-                      //     SvgPicture.asset('assets/svgs/aqi.svg', width: 15),
-                      //     Text(' AQI: $aqiIndex')
-                      //   ],
-                      // ),
-                      Row(
-                        children: [
-                          SvgPicture.asset('assets/svgs/pressure.svg', width: 15,),
-                          Text(' Pressure: ${currentData['visibility']}nPa'),
-                        ],
-                      ),
-                      // Row(
-                      //   children: [
-                      //     SvgPicture.asset('assets/svgs/cloudiness.svg', width: 15,),
-                      //     Text(' Mây: ${currentData['clouds']['all']}%'),
-                      //   ],
-                      // ),
-                      Row(
-                        children: [
-                          SvgPicture.asset('assets/svgs/visibility.svg', width: 15,),
-                          Text(' Visibility: ${currentData['visibility']}m'),
-                        ],
-                      ),
-
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10,),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Text('  '),
-                        SvgPicture.asset('assets/svgs/openweather.svg', height: 15,),
-                        const Text(' OpenWeatherMap', style: TextStyle(fontSize: 10, color: Colors.black54),)
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Text('Updated at ${formatEpochTimeToTime(currentData['dt'], currentData['timezone'])}   ', style: TextStyle(fontSize: 10),),
-                      ],
-                    )
-
-                  ],
-                )
+                _buildAdditionalInfo(),
+                SizedBox(height: 10),
+                _buildFooter(),
               ],
             ),
           ),
@@ -1072,4 +327,573 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  // Individual UI components - these can be implemented as needed following the pattern above
+  Widget _buildCurrentWeather() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: ListTile(
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${currentData['main']['temp']}\u00B0',
+                  style: TextStyle(fontSize: 55, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  '${currentData['weather'][0]['main']}',
+                  style: TextStyle(fontSize: 20, color: Colors.white),
+                ),
+                SizedBox(height: 30),
+                Text('${currentData['main']['temp_min']}\u00B0 / ${currentData['main']['temp_max']}\u00B0',
+                    style: TextStyle(color: Colors.white)),
+                Text('Feel like ${currentData['main']['feels_like']}\u00B0',
+                    style: TextStyle(color: Colors.white)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 0),
+        SvgPicture.asset(
+            FormattingService.getWeatherIconPath(currentData['weather'][0]['icon']),
+            height: 150,
+            width: 150
+        ),
+      ],
+    );
+  }
+
+  // Implement remaining UI components similarly
+  Widget _buildHourlyForecast() {
+    // Implement the hourly forecast UI component
+    return Container(
+      width: MediaQuery.of(context).size.width - 20,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: Color(0xFFBBDFEA).withAlpha(38),
+      ),
+      child: ListTile(
+        title: Text(
+            currentData.isNotEmpty
+                ? FormattingService.capitalize(currentData['weather'][0]['description'])
+                : '',
+            style: TextStyle(color: Colors.white)
+        ),
+        subtitle: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: List.generate(
+              (hourlyData['list']?.length ?? 0),
+                  (index) {
+                double popValue = (hourlyData['list'][index]['pop'] ?? 0).toDouble();
+                int pop1 = (popValue * 100).round();
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      Text(
+                          '${FormattingService.formatEpochTimeToTime(
+                              hourlyData['list'][index]['dt'],
+                              currentData['timezone']
+                          )}',
+                          style: TextStyle(color: Colors.white)
+                      ),
+                      SvgPicture.asset(
+                        FormattingService.getWeatherIconPath(
+                          hourlyData['list'][index]['weather'][0]['icon'],
+                        ),
+                        width: 50,
+                        height: 50,
+                      ),
+                      Text(
+                          '${hourlyData['list'][index]['main']['temp']}\u00B0',
+                          style: TextStyle(color: Colors.white)
+                      ),
+                      Row(
+                        children: [
+                          SvgPicture.asset(
+                            "assets/svgs/pop.svg",
+                            width: 15,
+                            height: 15,
+                          ),
+                          Text('$pop1%', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDailyForecast() {
+    // Implement the daily forecast UI component
+    return Container(
+      width: MediaQuery.of(context).size.width - 20,
+      padding: EdgeInsets.symmetric(horizontal: 0),
+      decoration: BoxDecoration(
+        color: Color(0xFFBBDFEA).withAlpha(38),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: ListTile(
+        title: Text('Daily Forecast', style: TextStyle(color: Colors.white)),
+        subtitle: Column(
+          children: List.generate(
+            min((dailyData['list'] as List?)?.length ?? 0, 7),
+                (index) {
+              final dayName = FormattingService.getDayName(
+                dailyData['list'][index]['dt'],
+              );
+              var maxTemp = double.parse(
+                dailyData['list'][index]['temp']['max'].toString(),
+              );
+              var minTemp = double.parse(
+                dailyData['list'][index]['temp']['min'].toString(),
+              );
+              final weatherIcon = dailyData['list'][index]['weather'][0]['icon'];
+              var pop = double.parse(
+                dailyData['list'][index]['pop'].toString(),
+              );
+              int max = maxTemp.round();
+              int min = minTemp.round();
+              int pop1 = (pop * 100).round();
+
+              // Implementation continues...
+              return _buildDailyRow(dayName, pop1, weatherIcon, max, min);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDailyRow(String dayName, int pop, String weatherIcon, int max, int min) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: (MediaQuery.of(context).size.width - 20) / 10 * 2.8,
+              child: Text(
+                '$dayName',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+            Container(
+              width: (MediaQuery.of(context).size.width - 20) / 10 * 1.5,
+              child: Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/svgs/pop.svg',
+                    width: 15,
+                  ),
+                  Text(' $pop%', style: TextStyle(color: Colors.white)),
+                ],
+              ),
+            ),
+            Container(
+              width: (MediaQuery.of(context).size.width - 20) / 10 * 1.8,
+              child: SvgPicture.asset(
+                FormattingService.getWeatherIconPath(weatherIcon),
+                width: 35,
+                height: 35,
+              ),
+            ),
+            Container(
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    width: (MediaQuery.of(context).size.width - 20) / 10 * 1.2,
+                    child: Text(
+                      '$max\u00B0',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    width: (MediaQuery.of(context).size.width - 20) / 10 * 1.2,
+                    child: Text(
+                      '$min\u00B0',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWeatherDetails() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 10,
+      ),
+      child: Column(
+        children: [
+          // First row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildDetailBox('Humidity', '${currentData['main']['humidity']}%'),
+              _buildDetailBox('Sea Level', '${currentData['main']['sea_level']}'),
+            ],
+          ),
+          SizedBox(height: 10),
+          // Second row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildDetailBox('Cloud', '${currentData['clouds']['all']}%'),
+              _buildDetailBox('Wind Speed', '${currentData['wind']['speed']}km/h'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailBox(String title, String value) {
+    return Expanded(
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Color(0xFFBBDFEA).withAlpha(38),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 24, color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeatherMap() {
+    return Container(
+      width: MediaQuery.of(context).size.width - 20,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Color(0xFFBBDFEA).withAlpha(38), // Màu xanh đậm như trong hình mẫu
+      ),
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề "Radar và bản đồ"
+          Text(
+            'Radar và bản đồ',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 12),
+
+          // Container cho bản đồ với bo tròn
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              height: 300,
+              width: double.infinity,
+              child: InAppWebView(
+                initialFile: "assets/weather_map.html",
+                onWebViewCreated: (controller) async {
+                  _webViewController = controller;
+                  _updateMap();
+                },
+              ),
+            ),
+          ),
+
+          // Nhiệt độ hiện tại
+          SizedBox(height: 12),
+          Text(
+            'Nhiệt độ hiện tại là ${currentData['main']['temp'].toStringAsFixed(0)}°',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w400,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSunriseSunset() {
+    // Lấy thời gian hiện tại tính bằng epoch seconds
+    final int currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    // Kiểm tra an toàn để tránh lỗi nếu không có dữ liệu
+    final int sunriseTime = currentData['sys']?['sunrise'] ?? currentTime;
+    final int sunsetTime = currentData['sys']?['sunset'] ?? (currentTime + 43200); // Mặc định +12h
+
+    return Container(
+      width: MediaQuery.of(context).size.width - 20,
+      padding: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Color(0xFFBBDFEA).withAlpha(38),  // Màu xanh đậm như trong hình mẫu
+      ),
+      child: Column(
+        children: [
+          // Phần vẽ đường cong
+          SizedBox(
+            width: MediaQuery.of(context).size.width - 60,
+            height: 100,
+            child: CustomPaint(
+              painter: SunArcPainter(
+                  sunriseTime: sunriseTime,
+                  sunsetTime: sunsetTime,
+                  currentTime: currentTime
+              ),
+            ),
+          ),
+          SizedBox(height: 10),
+          // Phần hiển thị thời gian bình minh/hoàng hôn
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildSunTimeBox(
+                'Bình minh',
+                FormattingService.formatEpochTimeToTime(
+                    currentData['sys']['sunrise'],
+                    currentData['timezone']
+                ),
+              ),
+              _buildSunTimeBox(
+                'Hoàng hôn',
+                FormattingService.formatEpochTimeToTime(
+                    currentData['sys']['sunset'],
+                    currentData['timezone']
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSunTimeBox(String title, String time) {
+    return Column(
+      children: [
+        Text(
+          title,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400, color: Colors.white),
+        ),
+        SizedBox(height: 8),
+        Text(
+          time,
+          style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildAdditionalInfo() {
+    return Container(
+      width: MediaQuery.of(context).size.width - 20,
+      padding: const EdgeInsets.only(top: 10, bottom: 10, left: 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Color(0xFFBBDFEA).withAlpha(38),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SvgPicture.asset('assets/svgs/pressure.svg', width: 15),
+              Text(' Pressure: ${currentData['visibility']}nPa',
+                  style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          Row(
+            children: [
+              SvgPicture.asset('assets/svgs/visibility.svg', width: 15),
+              Text(' Visibility: ${currentData['visibility']}m',
+                  style: TextStyle(color: Colors.white)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            const Text('  '),
+            SvgPicture.asset('assets/svgs/openweather.svg', height: 15),
+            const Text(' OpenWeatherMap',
+                style: TextStyle(fontSize: 10, color: Colors.black54))
+          ],
+        ),
+        Row(
+          children: [
+            Text(
+              'Updated at ${FormattingService.formatEpochTimeToTime(
+                  currentData['dt'], currentData['timezone'])}   ',
+              style: TextStyle(fontSize: 10),
+            ),
+          ],
+        )
+      ],
+    );
+  }
 }
+
+class SunArcPainter extends CustomPainter {
+  final int sunriseTime;
+  final int sunsetTime;
+  final int currentTime;
+
+  SunArcPainter({
+    required this.sunriseTime,
+    required this.sunsetTime,
+    required this.currentTime,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint yellowPaint = Paint()
+      ..color = Colors.yellow
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+
+    final Paint grayPaint = Paint()
+      ..color = Colors.grey.shade400
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+
+    double widthReduction = size.width * 0.1;
+    // Điều chỉnh vị trí của đường cong - nâng lên cao hơn
+    // Thay đổi từ size.height thành size.height * 0.5 để nâng trung tâm lên
+    final Rect rect = Rect.fromLTRB(widthReduction, size.height * 0.2, size.width - widthReduction, size.height * 2.3);
+
+    // Vẽ đường cong màu xám toàn bộ
+    canvas.drawArc(
+      rect,
+      0, // Bắt đầu từ góc 0 (bên phải)
+      -pi, // Đi 180 độ ngược chiều kim đồng hồ
+      false,
+      grayPaint,
+    );
+
+    // Tính toán phần đường cong mặt trời
+    double progress;
+    if (currentTime < sunriseTime) {
+      progress = 0;
+    } else if (currentTime > sunsetTime) {
+      progress = 1;
+    } else {
+      progress = (currentTime - sunriseTime) / (sunsetTime - sunriseTime);
+    }
+
+    // Vẽ phần đường cong vàng
+    canvas.drawArc(
+      rect,
+      0, // Bắt đầu từ góc 0 (bên phải)
+      -pi * progress, // Đi ngược chiều kim đồng hồ theo tiến độ
+      false,
+      yellowPaint,
+    );
+
+    // Thay thế đoạn code vẽ chấm tròn bằng đoạn code vẽ mặt trời
+    if (progress > 0 && progress < 1) {
+      final double angle = -pi * progress;
+      final double sunX = rect.center.dx + rect.width / 2 * cos(angle);
+      final double sunY = rect.center.dy + rect.height / 2 * sin(angle);
+
+      // Vẽ vòng tròn ngoài làm hiệu ứng phát sáng
+      final Paint sunGlowPaint = Paint()
+        ..color = Colors.yellow.withOpacity(0.3)
+        ..style = PaintingStyle.fill;
+
+      canvas.drawCircle(
+        Offset(sunX, sunY),
+        12, // Kích thước lớn hơn cho hiệu ứng phát sáng
+        sunGlowPaint,
+      );
+
+      // Vẽ vòng tròn chính của mặt trời
+      final Paint sunPaint = Paint()
+        ..color = Colors.yellow
+        ..style = PaintingStyle.fill;
+
+      canvas.drawCircle(
+        Offset(sunX, sunY),
+        8, // Kích thước mặt trời
+        sunPaint,
+      );
+
+      // Vẽ các tia sáng xung quanh mặt trời
+      final Paint rayPaint = Paint()
+        ..color = Colors.yellow
+        ..strokeWidth = 2.0
+        ..style = PaintingStyle.stroke;
+
+      const int numRays = 8; // Số lượng tia sáng
+      const double rayLength = 8.0; // Độ dài của tia sáng
+
+      for (int i = 0; i < numRays; i++) {
+        double rayAngle = 2 * pi * i / numRays;
+        double startX = sunX + 8 * cos(rayAngle); // Bắt đầu từ mép mặt trời
+        double startY = sunY + 8 * sin(rayAngle);
+        double endX = sunX + (8 + rayLength) * cos(rayAngle);
+        double endY = sunY + (8 + rayLength) * sin(rayAngle);
+
+        canvas.drawLine(
+          Offset(startX, startY),
+          Offset(endX, endY),
+          rayPaint,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+

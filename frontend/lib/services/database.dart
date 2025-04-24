@@ -60,6 +60,7 @@ class DatabaseHelper {
       sunrise INTEGER,
       sunset INTEGER,
       description TEXT,
+      main TEXT,
       updatedAt TEXT,
       FOREIGN KEY (location_id) REFERENCES location(id) ON DELETE CASCADE
     );
@@ -239,6 +240,36 @@ class DatabaseHelper {
       where: 'location_id = ?',
       whereArgs: [locationId],
       orderBy: 'time ASC', // Order by time
+    );
+  }
+
+// Xóa hourly data theo location_id
+  Future<int> deleteHourlyDataByLocationId(int locationId) async {
+    final db = await database;
+    return await db.delete(
+      'hourly_data',
+      where: 'location_id = ?',
+      whereArgs: [locationId],
+    );
+  }
+
+// Xóa daily data theo location_id
+  Future<int> deleteDailyDataByLocationId(int locationId) async {
+    final db = await database;
+    return await db.delete(
+      'daily_data',
+      where: 'location_id = ?',
+      whereArgs: [locationId],
+    );
+  }
+
+// Xóa weather data theo location_id
+  Future<int> deleteWeatherDataByLocationId(int locationId) async {
+    final db = await database;
+    return await db.delete(
+      'weather_data',
+      where: 'location_id = ?',
+      whereArgs: [locationId],
     );
   }
 }
