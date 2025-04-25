@@ -104,6 +104,8 @@ flutter:
     - assets/svgs/humidity.svg
     - assets/svgs/pressure.svg
     - assets/svgs/cloudiness.svg
+    - assets/svgs/visibility.svg
+    - assets/svgs/sea_level.svg
     - assets/weather_map.html
     - assets/images/
 
