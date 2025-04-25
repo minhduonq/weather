@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:geolocator/geolocator.dart';
 import 'constants.dart';
 import 'database.dart';
 
@@ -39,6 +38,8 @@ class WeatherService {
           'pressure': data['main']['pressure'],
           'humidity': data['main']['humidity'],
           'windSpeed': data['wind']['speed'],
+          'windDeg': data['wind']['deg'],
+          'windGust': data['wind']['gust'],
           'icon': data['weather'][0]['icon'],
           'description': data['weather'][0]['description'],
           'main': data['weather'][0]['main'],
@@ -173,7 +174,7 @@ class WeatherService {
             'humidity': weatherData['humidity'],
             'sea_level': weatherData['pressure']
           },
-          'wind': {'speed': weatherData['windSpeed']},
+          'wind': {'speed': weatherData['windSpeed'], 'deg': weatherData['windDeg'], 'gust': weatherData['windGust']},
           'clouds': {'all': weatherData['cloud']},
           'sys': {
             'sunrise': weatherData['sunrise'],

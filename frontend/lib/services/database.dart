@@ -53,6 +53,8 @@ class DatabaseHelper {
       pressure INTEGER,
       humidity INTEGER,
       windSpeed REAL,
+      windDeg REAL,
+      windGust REAL,
       icon TEXT,
       timeZone INTEGER,
       cloud INTEGER,
@@ -271,5 +273,42 @@ class DatabaseHelper {
       where: 'location_id = ?',
       whereArgs: [locationId],
     );
+  }
+
+  // Thêm vào class DatabaseHelper
+  Future<void> resetDatabase() async {
+    // Xóa toàn bộ database và tạo lại từ đầu
+    final databasePath = await getDatabasesPath();
+    final path = join(databasePath, 'weather.db');
+
+    // Đóng connection hiện tại nếu có
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+
+    // Xóa file database
+    await deleteDatabase(path);
+
+    // Khởi tạo lại database
+    _database = await _initDatabase();
+
+    log("Database has been completely reset!");
+  }
+
+// Phương thức xóa dữ liệu nhưng giữ cấu trúc bảng
+  Future<void> clearAllData() async {
+    final db = await database;
+
+    // Xóa dữ liệu từ tất cả các bảng
+    await db.delete('weather_data');
+    await db.delete('hourly_data');
+    await db.delete('daily_data');
+    await db.delete('search_history');
+
+    // Chỉ giữ lại location nếu cần
+    // await db.delete('location');
+
+    log("All weather data has been cleared from the database!");
   }
 }
