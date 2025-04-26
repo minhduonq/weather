@@ -9,6 +9,36 @@ class WeatherService {
   static Map<String, dynamic> dailyData = {};
   static Map<String, dynamic> weatherName = {};
 
+  // Thêm phương thức này vào WeatherService
+  static Map<String, dynamic> _processDailyData(Map<String, dynamic> rawData) {
+    if (rawData.isEmpty || rawData['list'] == null) {
+      return rawData;
+    }
+
+    // Nhóm dữ liệu theo ngày
+    Map<String, dynamic> uniqueDays = {};
+    List<dynamic> list = List.from(rawData['list']);
+
+    for (var item in list) {
+      // Tạo khóa theo ngày từ timestamp
+      final DateTime date = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
+      final String dayKey = "${date.year}-${date.month}-${date.day}";
+
+      if (!uniqueDays.containsKey(dayKey)) {
+        uniqueDays[dayKey] = item;
+      }
+    }
+
+    // Tạo lại danh sách đã lọc
+    List<dynamic> uniqueList = uniqueDays.values.toList();
+
+    // Cập nhật lại danh sách trong rawData
+    Map<String, dynamic> processedData = Map.from(rawData);
+    processedData['list'] = uniqueList;
+
+    return processedData;
+  }
+
   // Fetch weather data from API
   static Future<void> fetchWeatherData(double lat, double lon) async {
     final uri =
@@ -111,7 +141,8 @@ class WeatherService {
     try {
       final response = await http.get(Uri.parse(daily));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final rawData = json.decode(response.body);
+        data = _processDailyData(rawData);
 
         // Get location_id from API
         final locationId = data['city']['id'];
