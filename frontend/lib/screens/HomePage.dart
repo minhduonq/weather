@@ -438,7 +438,9 @@ class _HomePageState extends State<HomePage> {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  '${currentData['weather'][0]['main']}',
+                  currentData.isNotEmpty && currentData['weather'] != null && currentData['weather'].isNotEmpty
+                      ? '${currentData['weather'][0]['main']}'
+                      : '',
                   style: TextStyle(fontSize: 22, color: Colors.white),
                 ),
                 SizedBox(height: 10),
@@ -531,47 +533,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  // Widget _buildDailyForecast() {
-  //   // Implement the daily forecast UI component
-  //   return Container(
-  //     width: MediaQuery.of(context).size.width - 20,
-  //     padding: EdgeInsets.symmetric(horizontal: 0),
-  //     decoration: BoxDecoration(
-  //       color: Color(0xFFBBDFEA).withAlpha(38),
-  //       borderRadius: BorderRadius.circular(10),
-  //     ),
-  //     child: ListTile(
-  //       title: Text('Daily Forecast', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-  //       subtitle: Column(
-  //         children: List.generate(
-  //           min((dailyData['list'] as List?)?.length ?? 0, 7),
-  //               (index) {
-  //             final dayName = FormattingService.getDayName(
-  //               dailyData['list'][index]['dt'],
-  //             );
-  //             var maxTemp = double.parse(
-  //               dailyData['list'][index]['temp']['max'].toString(),
-  //             );
-  //             var minTemp = double.parse(
-  //               dailyData['list'][index]['temp']['min'].toString(),
-  //             );
-  //             final weatherIcon = dailyData['list'][index]['weather'][0]['icon'];
-  //             var pop = double.parse(
-  //               dailyData['list'][index]['pop'].toString(),
-  //             );
-  //             int max = maxTemp.round();
-  //             int min = minTemp.round();
-  //             int pop1 = (pop * 100).round();
-  //
-  //             // Implementation continues...
-  //             return _buildDailyRow(dayName, pop1, weatherIcon, max, min);
-  //           },
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _buildDailyForecast() {
     if (dailyData.isEmpty || dailyData['list'] == null) {
