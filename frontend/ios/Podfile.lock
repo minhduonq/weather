@@ -12,7 +12,12 @@ PODS:
   - geolocator_apple (1.2.0):
     - Flutter
     - FlutterMacOS
+  - home_widget (0.0.1):
+    - Flutter
   - OrderedSet (6.0.3)
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - speech_to_text (0.0.1):
     - Flutter
     - Try
@@ -26,6 +31,8 @@ DEPENDENCIES:
   - flutter_inappwebview_ios (from `.symlinks/plugins/flutter_inappwebview_ios/ios`)
   - geocoding_ios (from `.symlinks/plugins/geocoding_ios/ios`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
+  - home_widget (from `.symlinks/plugins/home_widget/ios`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - speech_to_text (from `.symlinks/plugins/speech_to_text/ios`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
 
@@ -43,6 +50,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/geocoding_ios/ios"
   geolocator_apple:
     :path: ".symlinks/plugins/geolocator_apple/darwin"
+  home_widget:
+    :path: ".symlinks/plugins/home_widget/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
   speech_to_text:
     :path: ".symlinks/plugins/speech_to_text/ios"
   sqflite_darwin:
@@ -53,7 +64,9 @@ SPEC CHECKSUMS:
   flutter_inappwebview_ios: 6f63631e2c62a7c350263b13fa5427aedefe81d4
   geocoding_ios: d7460f56e80e118d57678efe5c2cdc888739ff18
   geolocator_apple: 66b711889fd333205763b83c9dcf0a57a28c7afd
+  home_widget: 0434835a4c9a75704264feff6be17ea40e0f0d57
   OrderedSet: e539b66b644ff081c73a262d24ad552a69be3a94
+  path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   speech_to_text: b43a7d99aef037bd758ed8e45d79bbac035d2dfe
   sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
   Try: 5ef669ae832617b3cee58cb2c6f99fb767a4ff96

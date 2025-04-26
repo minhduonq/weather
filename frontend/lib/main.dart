@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/screens/SearchPlace.dart'; // Import màn hình SearchPlace
+import 'package:frontend/screens/HomePage.dart';
+import 'package:frontend/screens/weather_stogare.dart';
+import 'package:frontend/screens/SearchPlace.dart';
+//import 'package:frontend/services/widget_service.dart';
 
-void main() {
+void main() async {
+  //WidgetsFlutterBinding.ensureInitialized();
+  //await WidgetService.initWidgetService();
+
   runApp(const MyApp());
 }
 
@@ -13,7 +19,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SearchPlace(),
+      home: HomePage(),
     );
   }
 }
