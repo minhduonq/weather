@@ -13,18 +13,17 @@ class FormattingService {
   }
 
   // Get day name from epoch time
-  static String getDayName(int epochTime) {
-    DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(epochTime * 1000);
-    List<String> weekdays = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    return weekdays[dateTime.weekday - 1];
+  static String getDayName(int timestamp) {
+    // Tạo DateTime từ timestamp
+    final DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+
+    // Lấy ngày trong tuần
+    final int weekday = dateTime.weekday;
+
+    // Map số thành tên ngày
+    const List<String> dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    return dayNames[weekday - 1]; // weekday bắt đầu từ 1
   }
 
   // Get weather icon path
