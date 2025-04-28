@@ -16,6 +16,7 @@ import '../services/location_service.dart';
 import '../services/database.dart';
 import '../services/helpTrans.dart';
 
+import 'LocationManage.dart';
 import 'SearchPlace.dart';
 import 'Setting.dart';
 import 'Chatbot.dart';
@@ -313,6 +314,7 @@ class _HomePageState extends State<HomePage> {
             }),
           ),
 
+          // NÚT THÊM CHATBOT Ở ĐÂY
           IconButton(
             icon: Icon(Icons.settings, color: Colors.white),
             onPressed: () {
@@ -394,42 +396,43 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget _buildLocationIndicator() {
-  //   return Column(
-  //     mainAxisSize: MainAxisSize.min,
-  //     children: [
-  //       // Các chỉ báo trang
-  //       Row(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: List.generate(_locations.length, (index) {
-  //           bool isActive = index == _currentLocationIndex;
-  //           return GestureDetector(
-  //             onTap: () {
-  //               if (_pageController.hasClients) {
-  //                 _pageController.animateToPage(
-  //                   index,
-  //                   duration: Duration(milliseconds: 300),
-  //                   curve: Curves.easeInOut,
-  //                 );
-  //               }
-  //             },
-  //             child: AnimatedContainer(
-  //               duration: Duration(milliseconds: 300),
-  //               margin: EdgeInsets.symmetric(horizontal: 5),
-  //               height: isActive ? 12 : 8,
-  //               width: isActive ? 12 : 8,
-  //               decoration: BoxDecoration(
-  //                 shape: BoxShape.circle,
-  //                 color: isActive ? Colors.white : Colors.white.withOpacity(0.5),
-  //               ),
-  //             ),
-  //           );
-  //         }),
-  //       ),
-  //       SizedBox(height: 8),
-  //     ],
-  //   );
-  // }
+  Widget _buildLocationIndicator() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Các chỉ báo trang
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(_locations.length, (index) {
+            bool isActive = index == _currentLocationIndex;
+            return GestureDetector(
+              onTap: () {
+                if (_pageController.hasClients) {
+                  _pageController.animateToPage(
+                    index,
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                }
+              },
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                margin: EdgeInsets.symmetric(horizontal: 5),
+                height: isActive ? 12 : 8,
+                width: isActive ? 12 : 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color:
+                      isActive ? Colors.white : Colors.white.withOpacity(0.5),
+                ),
+              ),
+            );
+          }),
+        ),
+        SizedBox(height: 8),
+      ],
+    );
+  }
 
   Widget _buildCurrentWeather() {
     return Container(
@@ -457,11 +460,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  currentData.isNotEmpty &&
-                          currentData['weather'] != null &&
-                          currentData['weather'].isNotEmpty
-                      ? '${currentData['weather'][0]['main']}'
-                      : '',
+                  '${currentData['weather'][0]['main']}',
                   style: TextStyle(fontSize: 22, color: Colors.white),
                 ),
                 SizedBox(height: 10),
@@ -552,26 +551,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildDailyForecast() {
-    if (dailyData.isEmpty || dailyData['list'] == null) {
-      return Container();
-    }
-
-    // Tạo map để nhóm dữ liệu theo ngày
-    Map<String, dynamic> uniqueDays = {};
-
-    // Nhóm dữ liệu theo ngày
-    for (var item in dailyData['list']) {
-      final dayName = FormattingService.getDayName(item['dt']);
-
-      // Chỉ lấy dữ liệu đầu tiên của mỗi ngày
-      if (!uniqueDays.containsKey(dayName)) {
-        uniqueDays[dayName] = item;
-      }
-    }
-
-    // Chuyển lại thành danh sách để hiển thị
-    List<MapEntry<String, dynamic>> sortedEntries = uniqueDays.entries.toList();
-
+    // Implement the daily forecast UI component
     return Container(
       width: MediaQuery.of(context).size.width - 20,
       padding: EdgeInsets.symmetric(horizontal: 0),
@@ -590,20 +570,27 @@ class _HomePageState extends State<HomePage> {
         ),
         subtitle: Column(
           children: List.generate(
-            min(sortedEntries.length, 7), // Giới hạn tối đa 7 ngày
+            min((dailyData['list'] as List?)?.length ?? 0, 7),
             (index) {
-              final entry = sortedEntries[index];
-              final dayData = entry.value;
-              final dayName = entry.key;
-
-              var maxTemp = double.parse(dayData['temp']['max'].toString());
-              var minTemp = double.parse(dayData['temp']['min'].toString());
-              final weatherIcon = dayData['weather'][0]['icon'];
-              var pop = double.parse(dayData['pop'].toString());
+              final dayName = FormattingService.getDayName(
+                dailyData['list'][index]['dt'],
+              );
+              var maxTemp = double.parse(
+                dailyData['list'][index]['temp']['max'].toString(),
+              );
+              var minTemp = double.parse(
+                dailyData['list'][index]['temp']['min'].toString(),
+              );
+              final weatherIcon =
+                  dailyData['list'][index]['weather'][0]['icon'];
+              var pop = double.parse(
+                dailyData['list'][index]['pop'].toString(),
+              );
               int max = maxTemp.round();
               int min = minTemp.round();
               int pop1 = (pop * 100).round();
 
+              // Implementation continues...
               return _buildDailyRow(dayName, pop1, weatherIcon, max, min);
             },
           ),
@@ -642,11 +629,8 @@ class _HomePageState extends State<HomePage> {
                     'assets/svgs/pop.svg',
                     width: 15,
                   ),
-                  Text(
-                    ' $pop%',
-                    style: TextStyle(color: Colors.white, fontSize: 15),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(' $pop%',
+                      style: TextStyle(color: Colors.white, fontSize: 15)),
                 ],
               ),
             ),
@@ -936,7 +920,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           // Tiêu đề "Radar và bản đồ"
           Text(
-            'radar_and_map'.tr,
+            'Radar and Maps',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -1012,12 +996,12 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildSunTimeBox(
-                'Sunrise'.tr,
+                'Sunrise',
                 FormattingService.formatEpochTimeToTime(
                     currentData['sys']['sunrise'], currentData['timezone']),
               ),
               _buildSunTimeBox(
-                'Sunset'.tr,
+                'Sunset',
                 FormattingService.formatEpochTimeToTime(
                     currentData['sys']['sunset'], currentData['timezone']),
               ),
@@ -1095,11 +1079,18 @@ class SunArcPainter extends CustomPainter {
       ..strokeWidth = 3;
 
     double widthReduction = size.width * 0.1;
-    final Rect rect = Rect.fromLTRB(
-      widthReduction,
-      size.height * 0.2,
-      size.width - widthReduction,
-      size.height * 2.3,
+    // Điều chỉnh vị trí của đường cong - nâng lên cao hơn
+    // Thay đổi từ size.height thành size.height * 0.5 để nâng trung tâm lên
+    final Rect rect = Rect.fromLTRB(widthReduction, size.height * 0.2,
+        size.width - widthReduction, size.height * 2.3);
+
+    // Vẽ đường cong màu xám toàn bộ
+    canvas.drawArc(
+      rect,
+      0, // Bắt đầu từ góc 0 (bên phải)
+      -pi, // Đi 180 độ ngược chiều kim đồng hồ
+      false,
+      grayPaint,
     );
 
     // Tính toán phần đường cong mặt trời
@@ -1112,66 +1103,55 @@ class SunArcPainter extends CustomPainter {
       progress = (currentTime - sunriseTime) / (sunsetTime - sunriseTime);
     }
 
-    // Vẽ phần đường cong màu vàng đã đi qua trước
+    // Vẽ phần đường cong vàng
     canvas.drawArc(
       rect,
-      pi, // Bắt đầu từ bên trái
-      pi * progress, // Theo tiến độ
+      0, // Bắt đầu từ góc 0 (bên phải)
+      -pi * progress, // Đi ngược chiều kim đồng hồ theo tiến độ
       false,
       yellowPaint,
     );
 
-    // Vẽ phần đường cong màu xám còn lại
-    canvas.drawArc(
-      rect,
-      pi + pi * progress,
-      pi * (1 - progress),
-      false,
-      grayPaint,
-    );
-
-    // Vẽ mặt trời tại vị trí tương ứng
+    // Thay thế đoạn code vẽ chấm tròn bằng đoạn code vẽ mặt trời
     if (progress > 0 && progress < 1) {
-      final double angle =
-          pi * progress + pi; // Góc tính từ pi (trái) + progress
-
+      final double angle = -pi * progress;
       final double sunX = rect.center.dx + rect.width / 2 * cos(angle);
       final double sunY = rect.center.dy + rect.height / 2 * sin(angle);
 
-      // Hiệu ứng phát sáng
+      // Vẽ vòng tròn ngoài làm hiệu ứng phát sáng
       final Paint sunGlowPaint = Paint()
         ..color = Colors.yellow.withOpacity(0.3)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(
         Offset(sunX, sunY),
-        12,
+        12, // Kích thước lớn hơn cho hiệu ứng phát sáng
         sunGlowPaint,
       );
 
-      // Mặt trời
+      // Vẽ vòng tròn chính của mặt trời
       final Paint sunPaint = Paint()
         ..color = Colors.yellow
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(
         Offset(sunX, sunY),
-        8,
+        8, // Kích thước mặt trời
         sunPaint,
       );
 
-      // Các tia sáng
+      // Vẽ các tia sáng xung quanh mặt trời
       final Paint rayPaint = Paint()
         ..color = Colors.yellow
         ..strokeWidth = 2.0
         ..style = PaintingStyle.stroke;
 
-      const int numRays = 8;
-      const double rayLength = 8.0;
+      const int numRays = 8; // Số lượng tia sáng
+      const double rayLength = 8.0; // Độ dài của tia sáng
 
       for (int i = 0; i < numRays; i++) {
         double rayAngle = 2 * pi * i / numRays;
-        double startX = sunX + 8 * cos(rayAngle);
+        double startX = sunX + 8 * cos(rayAngle); // Bắt đầu từ mép mặt trời
         double startY = sunY + 8 * sin(rayAngle);
         double endX = sunX + (8 + rayLength) * cos(rayAngle);
         double endY = sunY + (8 + rayLength) * sin(rayAngle);

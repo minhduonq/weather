@@ -51,6 +51,7 @@ class _SettingsPageState extends State<Setting> {
           style: const TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w900,
+            letterSpacing: 1,
           ),
         ),
         backgroundColor: Colors.grey.shade300,
