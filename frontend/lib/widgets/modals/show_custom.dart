@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/manage_location.dart';
+import 'package:frontend/screens/manage_noete.dart';
+
+import 'package:frontend/screens/weather_stogare.dart';
 
 void showCustomModal(BuildContext context) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
       return Align(
-        alignment: Alignment.topRight, // Đặt modal ở góc trên bên phải
+        alignment: Alignment.topRight,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Material(
-            color: Colors.transparent, // Chỉnh màu nền của modal
+            color: Colors.transparent,
             child: Container(
-              width: 300, // Chiều rộng của modal
+              width: 300,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -35,7 +38,7 @@ void showCustomModal(BuildContext context) {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ManageLocationsScreen(),
+                            builder: (context) => WeatherStorageScreen(),
                           ));
                     },
                   ),
@@ -44,7 +47,11 @@ void showCustomModal(BuildContext context) {
                     title: Text('Notifications'),
                     trailing: Icon(Icons.notifications_none, size: 20),
                     onTap: () {
-                      Navigator.pop(context);
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ManageNote(),
+                          ));
                     },
                   ),
                 ],
