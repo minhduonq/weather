@@ -313,6 +313,7 @@ class _HomePageState extends State<HomePage> {
             }),
           ),
 
+
           IconButton(
             icon: Icon(Icons.settings, color: Colors.white),
             onPressed: () {
@@ -457,9 +458,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  currentData.isNotEmpty &&
-                          currentData['weather'] != null &&
-                          currentData['weather'].isNotEmpty
+                  currentData.isNotEmpty && currentData['weather'] != null && currentData['weather'].isNotEmpty
                       ? '${currentData['weather'][0]['main']}'
                       : '',
                   style: TextStyle(fontSize: 22, color: Colors.white),
@@ -591,7 +590,7 @@ class _HomePageState extends State<HomePage> {
         subtitle: Column(
           children: List.generate(
             min(sortedEntries.length, 7), // Giới hạn tối đa 7 ngày
-            (index) {
+                (index) {
               final entry = sortedEntries[index];
               final dayData = entry.value;
               final dayName = entry.key;
@@ -642,11 +641,12 @@ class _HomePageState extends State<HomePage> {
                     'assets/svgs/pop.svg',
                     width: 15,
                   ),
-                  Text(
-                    ' $pop%',
-                    style: TextStyle(color: Colors.white, fontSize: 15),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+<<<<<<< Updated upstream
+                  Text(' $pop%', style: TextStyle(color: Colors.white, fontSize: 15), overflow: TextOverflow.ellipsis,),
+=======
+                  Text(' $pop%',
+                      style: TextStyle(color: Colors.white, fontSize: 15)),
+>>>>>>> Stashed changes
                 ],
               ),
             ),
@@ -1095,11 +1095,26 @@ class SunArcPainter extends CustomPainter {
       ..strokeWidth = 3;
 
     double widthReduction = size.width * 0.1;
+<<<<<<< Updated upstream
     final Rect rect = Rect.fromLTRB(
       widthReduction,
       size.height * 0.2,
       size.width - widthReduction,
       size.height * 2.3,
+=======
+    // Điều chỉnh vị trí của đường cong - nâng lên cao hơn
+    // Thay đổi từ size.height thành size.height * 0.5 để nâng trung tâm lên
+    final Rect rect = Rect.fromLTRB(widthReduction, size.height * 0.2,
+        size.width - widthReduction, size.height * 2.3);
+
+    // Vẽ đường cong màu xám toàn bộ
+    canvas.drawArc(
+      rect,
+      0, // Bắt đầu từ góc 0 (bên phải)
+      -pi, // Đi 180 độ ngược chiều kim đồng hồ
+      false,
+      grayPaint,
+>>>>>>> Stashed changes
     );
 
     // Tính toán phần đường cong mặt trời
@@ -1115,8 +1130,8 @@ class SunArcPainter extends CustomPainter {
     // Vẽ phần đường cong màu vàng đã đi qua trước
     canvas.drawArc(
       rect,
-      pi, // Bắt đầu từ bên trái
-      pi * progress, // Theo tiến độ
+      pi,               // Bắt đầu từ bên trái
+      pi * progress,    // Theo tiến độ
       false,
       yellowPaint,
     );
@@ -1132,8 +1147,7 @@ class SunArcPainter extends CustomPainter {
 
     // Vẽ mặt trời tại vị trí tương ứng
     if (progress > 0 && progress < 1) {
-      final double angle =
-          pi * progress + pi; // Góc tính từ pi (trái) + progress
+      final double angle = pi * progress + pi; // Góc tính từ pi (trái) + progress
 
       final double sunX = rect.center.dx + rect.width / 2 * cos(angle);
       final double sunY = rect.center.dy + rect.height / 2 * sin(angle);
@@ -1188,6 +1202,7 @@ class SunArcPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
 
 class GaugePainter extends CustomPainter {
   final double value; // 0.0 to 1.0

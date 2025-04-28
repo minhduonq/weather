@@ -46,19 +46,13 @@ class _SettingsPageState extends State<Setting> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'settings'.tr,
-          style: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+        title: Text('settings'.tr),
         backgroundColor: Colors.grey.shade300,
         elevation: 0,
       ),
       backgroundColor: Colors.grey.shade300,
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
         children: [
           _buildCard([
             _buildDropdownTile(
@@ -107,13 +101,13 @@ class _SettingsPageState extends State<Setting> {
               },
             ),
           ]),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           _buildCard([
             SwitchListTile(
               title: Text(
                 'outside_app'.tr,
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 1,
                 ),
@@ -130,7 +124,7 @@ class _SettingsPageState extends State<Setting> {
               title: Text(
                 'notification'.tr,
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 1,
                 ),
@@ -138,13 +132,13 @@ class _SettingsPageState extends State<Setting> {
               onTap: () {},
             ),
           ]),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           _buildCard([
             ListTile(
               title: Text(
                 'rate'.tr,
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 1,
                 ),
@@ -155,7 +149,7 @@ class _SettingsPageState extends State<Setting> {
               title: Text(
                 'privacy'.tr,
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 1,
                 ),
@@ -166,7 +160,7 @@ class _SettingsPageState extends State<Setting> {
               title: Text(
                 'contact'.tr,
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 1,
                 ),
@@ -187,9 +181,9 @@ class _SettingsPageState extends State<Setting> {
   }) {
     return ListTile(
       title: trWithStyle(
-        title,
+        title.toUpperCase(),
         style: const TextStyle(
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: FontWeight.w500,
           letterSpacing: 1,
         ),
@@ -212,7 +206,7 @@ class _SettingsPageState extends State<Setting> {
   Widget _buildCard(List<Widget> children) {
     return Card(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
       ),
       elevation: 2,
       child: Column(
