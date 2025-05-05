@@ -1,29 +1,35 @@
+import 'package:get/get.dart';
+
 class FormattingService {
   // Format epoch time to readable time string
-  static String formatEpochTimeToTime(int epochTime, int timezoneOffsetInSeconds) {
-    // Add timezone offset to convert to local time
+  static String formatEpochTimeToTime(
+      int epochTime, int timezoneOffsetInSeconds) {
     DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(
       (epochTime + timezoneOffsetInSeconds) * 1000,
-      isUtc: true, // because epoch time from API is UTC
+      isUtc: true,
     );
-
     String formattedTime =
         '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     return formattedTime;
   }
 
-  // Get day name from epoch time
+  // Get day name from epoch time with translation
   static String getDayName(int timestamp) {
-    // Tạo DateTime từ timestamp
-    final DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
-
-    // Lấy ngày trong tuần
+    final DateTime dateTime =
+        DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
     final int weekday = dateTime.weekday;
 
-    // Map số thành tên ngày
-    const List<String> dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const List<String> dayKeys = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
 
-    return dayNames[weekday - 1]; // weekday bắt đầu từ 1
+    return dayKeys[weekday - 1].tr; // Dùng key để dịch theo ngôn ngữ hiện tại
   }
 
   // Get weather icon path
