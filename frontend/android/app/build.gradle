@@ -28,6 +28,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        vectorDrawables.useSupportLibrary = true
     }
 
     buildTypes {
@@ -37,8 +38,22 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    configurations.all {
+        resolutionStrategy {
+            // Buộc sử dụng cùng một phiên bản của work-runtime
+            force "androidx.work:work-runtime:2.8.1"
+            force "androidx.work:work-runtime-ktx:2.8.1"
+        }
+    }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Các dependencies khác...
+    implementation "androidx.work:work-runtime-ktx:2.8.1"
+    implementation "io.flutter:flutter_embedding_debug:1.0.0-a4ff2c53d84ca78702bc3be6c7ef0788ffca01d3"
 }
