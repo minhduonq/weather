@@ -1,5 +1,5 @@
-
 import 'dart:math';
+import 'package:get/get.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -14,9 +14,11 @@ import '../services/weather_service.dart';
 import '../services/formatting_service.dart';
 import '../services/location_service.dart';
 import '../services/database.dart';
+import '../services/helpTrans.dart';
 
 import 'SearchPlace.dart';
 import 'Setting.dart';
+import 'Chatbot.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -25,7 +27,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
   PageController _pageController = PageController();
   List<Map<String, dynamic>> _locations = [];
   int _currentLocationIndex = 0;
@@ -55,8 +56,10 @@ class _HomePageState extends State<HomePage> {
 
     if (KeyLocation != null) {
       // If we already have a location (from drawer selection), load its data
-      await WeatherService.loadWeatherData(KeyLocation!.latitude, KeyLocation!.longitude);
-      await WeatherService.getLocationName(KeyLocation!.latitude, KeyLocation!.longitude);
+      await WeatherService.loadWeatherData(
+          KeyLocation!.latitude, KeyLocation!.longitude);
+      await WeatherService.getLocationName(
+          KeyLocation!.latitude, KeyLocation!.longitude);
 
       // Tìm và đặt index cho vị trí hiện tại
       _setCurrentLocationIndex();
@@ -137,8 +140,10 @@ class _HomePageState extends State<HomePage> {
       }
 
       // Load weather data
-      await WeatherService.loadWeatherData(KeyLocation!.latitude, KeyLocation!.longitude);
-      await WeatherService.getLocationName(KeyLocation!.latitude, KeyLocation!.longitude);
+      await WeatherService.loadWeatherData(
+          KeyLocation!.latitude, KeyLocation!.longitude);
+      await WeatherService.getLocationName(
+          KeyLocation!.latitude, KeyLocation!.longitude);
       print(KeyLocation!.latitude);
       print(KeyLocation!.longitude);
 
@@ -163,16 +168,18 @@ class _HomePageState extends State<HomePage> {
 // Lấy màu nền phù hợp với thời gian hiện tại
   Color _getBackgroundColor() {
     return _isDaytime()
-        ? Color(0xFF66CEED)  // Màu ban ngày (màu hiện tại)
+        ? Color(0xFF66CEED) // Màu ban ngày (màu hiện tại)
         : Color(0xFF295EA7); // Màu ban đêm
   }
 
   void _updateMap() {
     if (_webViewController != null && KeyLocation != null) {
       _webViewController!.evaluateJavascript(
-        source: '''updateMap(${KeyLocation!.latitude}, ${KeyLocation!.longitude});''',
+        source:
+            '''updateMap(${KeyLocation!.latitude}, ${KeyLocation!.longitude});''',
       );
-      print("Map updated to: ${KeyLocation!.latitude}, ${KeyLocation!.longitude}");
+      print(
+          "Map updated to: ${KeyLocation!.latitude}, ${KeyLocation!.longitude}");
     }
   }
 
@@ -184,16 +191,12 @@ class _HomePageState extends State<HomePage> {
 
     // Load new data from API
     await WeatherService.fetchWeatherData(
-        currentLocation['latitude'],
-        currentLocation['longitude']
-    );
+        currentLocation['latitude'], currentLocation['longitude']);
 
     // Update location name if needed
     if (!currentLocation['isCurrent']) {
       await WeatherService.getLocationName(
-          currentLocation['latitude'],
-          currentLocation['longitude']
-      );
+          currentLocation['latitude'], currentLocation['longitude']);
     }
 
     _updateMap();
@@ -216,16 +219,27 @@ class _HomePageState extends State<HomePage> {
         appBar: AppBar(
           title: Text(
             LocationName ?? 'Weather',
-            style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold),
           ),
           actions: [
-            // Nút tìm kiếm phía phải
+            // Nút chatbot
+            IconButton(
+              icon: Icon(Icons.chat, color: Colors.white, size: 30),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => ChatbotScreen()),
+                );
+              },
+            ),
+
+            // Nút tìm kiếm
             IconButton(
               icon: Icon(Icons.search, color: Colors.white, size: 32),
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => SearchPlace()
-                ));
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => SearchPlace()),
+                );
               },
             ),
           ],
@@ -258,14 +272,14 @@ class _HomePageState extends State<HomePage> {
             icon: Row(
               children: [
                 Icon(Icons.menu, color: Colors.white),
-                SizedBox(width: 10,),
-
+                SizedBox(
+                  width: 10,
+                ),
               ],
             ),
             onPressed: () {
               Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => ManageLocationsScreen()
-              ));
+                  builder: (context) => ManageLocationsScreen()));
             },
           ),
 
@@ -291,20 +305,19 @@ class _HomePageState extends State<HomePage> {
                   width: isActive ? 12 : 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isActive ? Colors.white : Colors.white.withOpacity(0.5),
+                    color:
+                        isActive ? Colors.white : Colors.white.withOpacity(0.5),
                   ),
                 ),
               );
             }),
           ),
 
-
           IconButton(
             icon: Icon(Icons.settings, color: Colors.white),
             onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => Setting()
-              ));
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (context) => Setting()));
             },
           ),
         ],
@@ -340,9 +353,11 @@ class _HomePageState extends State<HomePage> {
           );
 
           // Load weather data for this location
-          WeatherService.loadWeatherData(location['latitude'], location['longitude']).then((_) {
+          WeatherService.loadWeatherData(
+                  location['latitude'], location['longitude'])
+              .then((_) {
             _updateMap();
-            setState(() {});  // Update UI with new data
+            setState(() {}); // Update UI with new data
           });
         });
       },
@@ -427,24 +442,31 @@ class _HomePageState extends State<HomePage> {
           Positioned(
             left: 16,
             top: 0,
-            right: 100, // Để lại không gian cho icon, nhưng text có thể đè lên khi cần
+            right:
+                100, // Để lại không gian cho icon, nhưng text có thể đè lên khi cần
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '${currentData['main']['temp']}\u00B0',
-                  style: TextStyle(fontSize: 55, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(
+                      fontSize: 55,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                   overflow: TextOverflow.visible, // Cho phép text tràn ra
                 ),
                 SizedBox(height: 10),
                 Text(
-                  currentData.isNotEmpty && currentData['weather'] != null && currentData['weather'].isNotEmpty
+                  currentData.isNotEmpty &&
+                          currentData['weather'] != null &&
+                          currentData['weather'].isNotEmpty
                       ? '${currentData['weather'][0]['main']}'
                       : '',
                   style: TextStyle(fontSize: 22, color: Colors.white),
                 ),
                 SizedBox(height: 10),
-                Text('${currentData['main']['temp_min']}\u00B0 / ${currentData['main']['temp_max']}\u00B0',
+                Text(
+                    '${currentData['main']['temp_min']}\u00B0 / ${currentData['main']['temp_max']}\u00B0',
                     style: TextStyle(color: Colors.white, fontSize: 18)),
                 Text('Feel like ${currentData['main']['feels_like']}\u00B0',
                     style: TextStyle(color: Colors.white, fontSize: 18)),
@@ -457,10 +479,10 @@ class _HomePageState extends State<HomePage> {
             right: 10,
             top: 0,
             child: SvgPicture.asset(
-                FormattingService.getWeatherIconPath(currentData['weather'][0]['icon']),
+                FormattingService.getWeatherIconPath(
+                    currentData['weather'][0]['icon']),
                 height: 150,
-                width: 150
-            ),
+                width: 150),
           ),
         ],
       ),
@@ -479,29 +501,26 @@ class _HomePageState extends State<HomePage> {
       child: ListTile(
         title: Text(
             currentData.isNotEmpty
-                ? FormattingService.capitalize(currentData['weather'][0]['description'])
+                ? FormattingService.capitalize(
+                    currentData['weather'][0]['description'])
                 : '',
-            style: TextStyle(color: Colors.white, fontSize: 20)
-        ),
+            style: TextStyle(color: Colors.white, fontSize: 20)),
         subtitle: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: List.generate(
               (hourlyData['list']?.length ?? 0),
-                  (index) {
-                double popValue = (hourlyData['list'][index]['pop'] ?? 0).toDouble();
+              (index) {
+                double popValue =
+                    (hourlyData['list'][index]['pop'] ?? 0).toDouble();
                 int pop1 = (popValue * 100).round();
                 return Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Column(
                     children: [
                       Text(
-                          '${FormattingService.formatEpochTimeToTime(
-                              hourlyData['list'][index]['dt'],
-                              currentData['timezone']
-                          )}',
-                          style: TextStyle(color: Colors.white)
-                      ),
+                          '${FormattingService.formatEpochTimeToTime(hourlyData['list'][index]['dt'], currentData['timezone'])}',
+                          style: TextStyle(color: Colors.white)),
                       SvgPicture.asset(
                         FormattingService.getWeatherIconPath(
                           hourlyData['list'][index]['weather'][0]['icon'],
@@ -509,10 +528,8 @@ class _HomePageState extends State<HomePage> {
                         width: 50,
                         height: 50,
                       ),
-                      Text(
-                          '${hourlyData['list'][index]['main']['temp']}\u00B0',
-                          style: TextStyle(color: Colors.white)
-                      ),
+                      Text('${hourlyData['list'][index]['main']['temp']}\u00B0',
+                          style: TextStyle(color: Colors.white)),
                       Row(
                         children: [
                           SvgPicture.asset(
@@ -563,12 +580,18 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: ListTile(
-        title: Text('Daily Forecast',
-            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+        title: trWithStyle(
+          'daily_forecast',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         subtitle: Column(
           children: List.generate(
             min(sortedEntries.length, 7), // Giới hạn tối đa 7 ngày
-                (index) {
+            (index) {
               final entry = sortedEntries[index];
               final dayData = entry.value;
               final dayName = entry.key;
@@ -589,7 +612,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDailyRow(String dayName, int pop, String weatherIcon, int max, int min) {
+  Widget _buildDailyRow(
+      String dayName, int pop, String weatherIcon, int max, int min) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -600,8 +624,12 @@ class _HomePageState extends State<HomePage> {
               width: (MediaQuery.of(context).size.width - 20) / 10 * 2.5,
               child: Text(
                 '$dayName',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
-                overflow: TextOverflow.ellipsis, // Thêm overflow để cắt văn bản nếu cần
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 18),
+                overflow: TextOverflow
+                    .ellipsis, // Thêm overflow để cắt văn bản nếu cần
               ),
             ),
 
@@ -614,14 +642,20 @@ class _HomePageState extends State<HomePage> {
                     'assets/svgs/pop.svg',
                     width: 15,
                   ),
-                  Text(' $pop%', style: TextStyle(color: Colors.white, fontSize: 15), overflow: TextOverflow.ellipsis,),
+                  Text(
+                    ' $pop%',
+                    style: TextStyle(color: Colors.white, fontSize: 15),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),
 
             // Weather icon
             Container(
-              width: (MediaQuery.of(context).size.width - 20) / 10 * 1.5, // Giảm nhẹ chiều rộng
+              width: (MediaQuery.of(context).size.width - 20) /
+                  10 *
+                  1.5, // Giảm nhẹ chiều rộng
               child: SvgPicture.asset(
                 FormattingService.getWeatherIconPath(weatherIcon),
                 width: 35,
@@ -642,9 +676,9 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          fontSize: 19
-                      ),
-                      overflow: TextOverflow.visible, // Cho phép hiển thị đầy đủ
+                          fontSize: 19),
+                      overflow:
+                          TextOverflow.visible, // Cho phép hiển thị đầy đủ
                     ),
                   ),
                   SizedBox(width: 10), // Khoảng cách giữa max và min
@@ -658,8 +692,7 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          fontSize: 18
-                      ),
+                          fontSize: 18),
                       textAlign: TextAlign.right,
                     ),
                   ),
@@ -687,7 +720,8 @@ class _HomePageState extends State<HomePage> {
           children: [
             Text(
               title,
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              style:
+                  TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
             ),
             Text(
               value,
@@ -713,7 +747,7 @@ class _HomePageState extends State<HomePage> {
           // Độ ẩm
           _buildDetailCard(
             icon: 'assets/svgs/humidity.svg',
-            title: 'Humidity',
+            title: 'Humidity'.tr,
             value: '${currentData['main']['humidity']}%',
             subtitle: '',
             progress: currentData['main']['humidity'] / 100,
@@ -724,24 +758,27 @@ class _HomePageState extends State<HomePage> {
           // Áp suất
           _buildDetailCard(
             icon: 'assets/svgs/pressure.svg',
-            title: 'Pressure',
+            title: 'Pressure'.tr,
             value: '${currentData['main']['pressure']} mb',
             subtitle: '',
             showGauge: true,
-            gaugeValue: currentData['main']['pressure'] / 1050, // Chia cho giá trị max để có tỷ lệ từ 0-1
+            gaugeValue: currentData['main']['pressure'] /
+                1050, // Chia cho giá trị max để có tỷ lệ từ 0-1
           ),
 
           // Gió
           _buildDetailCard(
             icon: 'assets/svgs/wind.svg',
-            title: 'Wind',
+            title: 'Wind'.tr,
             value: '',
             subtitle: '',
             showWindDirection: true,
-            windDegree: currentData['wind'] != null && currentData['wind']['deg'] != null
+            windDegree: currentData['wind'] != null &&
+                    currentData['wind']['deg'] != null
                 ? currentData['wind']['deg'].toDouble()
                 : 0.0,
-            windSpeed: currentData['wind'] != null && currentData['wind']['speed'] != null
+            windSpeed: currentData['wind'] != null &&
+                    currentData['wind']['speed'] != null
                 ? currentData['wind']['speed'].toDouble()
                 : 0.0,
           ),
@@ -749,22 +786,23 @@ class _HomePageState extends State<HomePage> {
           // Tầm nhìn
           _buildDetailCard(
             icon: 'assets/svgs/visibility.svg',
-            title: 'Visibility',
-            value: '${(currentData['visibility'] / 1000).toStringAsFixed(2)} km',
+            title: 'Visibility'.tr,
+            value:
+                '${(currentData['visibility'] / 1000).toStringAsFixed(2)} km',
             subtitle: '',
           ),
 
           // Sea Level
           _buildDetailCard(
             icon: 'assets/svgs/sea_level.svg',
-            title: 'Sea Level',
+            title: 'Sea Level'.tr,
             value: '${currentData['main']['sea_level']} hPa',
             subtitle: '',
           ),
 
           _buildDetailCard(
             icon: 'assets/svgs/cloudiness.svg',
-            title: 'Clouds',
+            title: 'Clouds'.tr,
             value: '${currentData['clouds']['all']}%',
             subtitle: '',
           ),
@@ -815,7 +853,9 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          SizedBox(height: 8,),
+          SizedBox(
+            height: 8,
+          ),
 
           // Subtitle
           Text(
@@ -825,7 +865,9 @@ class _HomePageState extends State<HomePage> {
               fontSize: 14,
             ),
           ),
-          SizedBox(height: 8,),
+          SizedBox(
+            height: 8,
+          ),
           // Progress bar (nếu có)
           if (progress != null)
             Container(
@@ -875,8 +917,6 @@ class _HomePageState extends State<HomePage> {
               fontWeight: FontWeight.bold,
             ),
           ),
-
-
         ],
       ),
     );
@@ -887,7 +927,8 @@ class _HomePageState extends State<HomePage> {
       width: MediaQuery.of(context).size.width - 20,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: Color(0xFFBBDFEA).withAlpha(38), // Màu xanh đậm như trong hình mẫu
+        color:
+            Color(0xFFBBDFEA).withAlpha(38), // Màu xanh đậm như trong hình mẫu
       ),
       padding: EdgeInsets.all(16),
       child: Column(
@@ -895,7 +936,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           // Tiêu đề "Radar và bản đồ"
           Text(
-            'Radar and Maps',
+            'radar_and_map'.tr,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -941,14 +982,16 @@ class _HomePageState extends State<HomePage> {
 
     // Kiểm tra an toàn để tránh lỗi nếu không có dữ liệu
     final int sunriseTime = currentData['sys']?['sunrise'] ?? currentTime;
-    final int sunsetTime = currentData['sys']?['sunset'] ?? (currentTime + 43200); // Mặc định +12h
+    final int sunsetTime =
+        currentData['sys']?['sunset'] ?? (currentTime + 43200); // Mặc định +12h
 
     return Container(
       width: MediaQuery.of(context).size.width - 20,
       padding: EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: Color(0xFFBBDFEA).withAlpha(38),  // Màu xanh đậm như trong hình mẫu
+        color:
+            Color(0xFFBBDFEA).withAlpha(38), // Màu xanh đậm như trong hình mẫu
       ),
       child: Column(
         children: [
@@ -960,8 +1003,7 @@ class _HomePageState extends State<HomePage> {
               painter: SunArcPainter(
                   sunriseTime: sunriseTime,
                   sunsetTime: sunsetTime,
-                  currentTime: currentTime
-              ),
+                  currentTime: currentTime),
             ),
           ),
           SizedBox(height: 10),
@@ -970,18 +1012,14 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildSunTimeBox(
-                'Sunrise',
+                'Sunrise'.tr,
                 FormattingService.formatEpochTimeToTime(
-                    currentData['sys']['sunrise'],
-                    currentData['timezone']
-                ),
+                    currentData['sys']['sunrise'], currentData['timezone']),
               ),
               _buildSunTimeBox(
-                'Sunset',
+                'Sunset'.tr,
                 FormattingService.formatEpochTimeToTime(
-                    currentData['sys']['sunset'],
-                    currentData['timezone']
-                ),
+                    currentData['sys']['sunset'], currentData['timezone']),
               ),
             ],
           ),
@@ -995,18 +1033,18 @@ class _HomePageState extends State<HomePage> {
       children: [
         Text(
           title,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w400, color: Colors.white),
+          style: TextStyle(
+              fontSize: 20, fontWeight: FontWeight.w400, color: Colors.white),
         ),
         SizedBox(height: 8),
         Text(
           time,
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+              fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ],
     );
   }
-
-
 
   Widget _buildFooter() {
     return Row(
@@ -1023,8 +1061,7 @@ class _HomePageState extends State<HomePage> {
         Row(
           children: [
             Text(
-              'Updated at ${FormattingService.formatEpochTimeToTime(
-                  currentData['dt'], currentData['timezone'])}   ',
+              'Updated at ${FormattingService.formatEpochTimeToTime(currentData['dt'], currentData['timezone'])}   ',
               style: TextStyle(fontSize: 10, color: Colors.white),
             ),
           ],
@@ -1078,8 +1115,8 @@ class SunArcPainter extends CustomPainter {
     // Vẽ phần đường cong màu vàng đã đi qua trước
     canvas.drawArc(
       rect,
-      pi,               // Bắt đầu từ bên trái
-      pi * progress,    // Theo tiến độ
+      pi, // Bắt đầu từ bên trái
+      pi * progress, // Theo tiến độ
       false,
       yellowPaint,
     );
@@ -1095,7 +1132,8 @@ class SunArcPainter extends CustomPainter {
 
     // Vẽ mặt trời tại vị trí tương ứng
     if (progress > 0 && progress < 1) {
-      final double angle = pi * progress + pi; // Góc tính từ pi (trái) + progress
+      final double angle =
+          pi * progress + pi; // Góc tính từ pi (trái) + progress
 
       final double sunX = rect.center.dx + rect.width / 2 * cos(angle);
       final double sunY = rect.center.dy + rect.height / 2 * sin(angle);
@@ -1151,7 +1189,6 @@ class SunArcPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-
 class GaugePainter extends CustomPainter {
   final double value; // 0.0 to 1.0
 
@@ -1168,10 +1205,8 @@ class GaugePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8;
 
-    canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        pi, pi, false, bgPaint
-    );
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), pi, pi,
+        false, bgPaint);
 
     // Vẽ phần đã đạt được
     final valuePaint = Paint()
@@ -1179,10 +1214,8 @@ class GaugePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8;
 
-    canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        pi, pi * value, false, valuePaint
-    );
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), pi,
+        pi * value, false, valuePaint);
 
     // Vẽ chấm hiển thị vị trí hiện tại
     final dotPaint = Paint()
@@ -1209,7 +1242,8 @@ class WindDirectionPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = min(size.width, size.height) / 1.1; // Giảm tỷ lệ từ 2 xuống 2.5 để có nhiều không gian hơn
+    final radius = min(size.width, size.height) /
+        1.1; // Giảm tỷ lệ từ 2 xuống 2.5 để có nhiều không gian hơn
 
     // Vẽ vòng tròn đo
     final bgPaint = Paint()
@@ -1234,34 +1268,31 @@ class WindDirectionPainter extends CustomPainter {
       // North
       textPainter.text = TextSpan(text: 'N', style: textStyle);
       textPainter.layout();
-      textPainter.paint(canvas, Offset(
-          center.dx - textPainter.width / 2,
-          center.dy - radius - 20 // Thêm khoảng cách để hiển thị rõ hơn
-      ));
+      textPainter.paint(
+          canvas,
+          Offset(center.dx - textPainter.width / 2,
+              center.dy - radius - 20 // Thêm khoảng cách để hiển thị rõ hơn
+              ));
 
       // East
       textPainter.text = TextSpan(text: 'E', style: textStyle);
       textPainter.layout();
-      textPainter.paint(canvas, Offset(
-          center.dx + radius + 8,
-          center.dy - textPainter.height / 2
-      ));
+      textPainter.paint(canvas,
+          Offset(center.dx + radius + 8, center.dy - textPainter.height / 2));
 
       // South
       textPainter.text = TextSpan(text: 'S', style: textStyle);
       textPainter.layout();
-      textPainter.paint(canvas, Offset(
-          center.dx - textPainter.width / 2,
-          center.dy + radius + 8
-      ));
+      textPainter.paint(canvas,
+          Offset(center.dx - textPainter.width / 2, center.dy + radius + 8));
 
       // West
       textPainter.text = TextSpan(text: 'W', style: textStyle);
       textPainter.layout();
-      textPainter.paint(canvas, Offset(
-          center.dx - radius - textPainter.width - 8,
-          center.dy - textPainter.height / 2
-      ));
+      textPainter.paint(
+          canvas,
+          Offset(center.dx - radius - textPainter.width - 8,
+              center.dy - textPainter.height / 2));
     }
 
     drawCardinalPoints();
@@ -1273,7 +1304,7 @@ class WindDirectionPainter extends CustomPainter {
     final arrowPositionX = center.dx + radius * 0.85 * cos(arrowAngle);
     final arrowPositionY = center.dy + radius * 0.85 * sin(arrowAngle);
 
-        // Vẽ đầu mũi tên to hơn và rõ ràng hơn
+    // Vẽ đầu mũi tên to hơn và rõ ràng hơn
     final arrowheadPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
@@ -1289,21 +1320,25 @@ class WindDirectionPainter extends CustomPainter {
 
     // Điểm bên trái của mũi tên
     path.lineTo(
-        arrowPositionX - backOffset * cos(arrowAngle) + arrowSize * cos(arrowAngle - pi/2),
-        arrowPositionY - backOffset * sin(arrowAngle) + arrowSize * sin(arrowAngle - pi/2)
-    );
+        arrowPositionX -
+            backOffset * cos(arrowAngle) +
+            arrowSize * cos(arrowAngle - pi / 2),
+        arrowPositionY -
+            backOffset * sin(arrowAngle) +
+            arrowSize * sin(arrowAngle - pi / 2));
 
     // Điểm giữa phía sau (lõm vào)
-    path.lineTo(
-        arrowPositionX - backOffset * 0.7 * cos(arrowAngle),
-        arrowPositionY - backOffset * 0.7 * sin(arrowAngle)
-    );
+    path.lineTo(arrowPositionX - backOffset * 0.7 * cos(arrowAngle),
+        arrowPositionY - backOffset * 0.7 * sin(arrowAngle));
 
     // Điểm bên phải của mũi tên
     path.lineTo(
-        arrowPositionX - backOffset * cos(arrowAngle) + arrowSize * cos(arrowAngle + pi/2),
-        arrowPositionY - backOffset * sin(arrowAngle) + arrowSize * sin(arrowAngle + pi/2)
-    );
+        arrowPositionX -
+            backOffset * cos(arrowAngle) +
+            arrowSize * cos(arrowAngle + pi / 2),
+        arrowPositionY -
+            backOffset * sin(arrowAngle) +
+            arrowSize * sin(arrowAngle + pi / 2));
 
     // Đóng path để tạo hình mũi tên hoàn chỉnh
     path.close();

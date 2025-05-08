@@ -4,7 +4,7 @@ Position? KeyLocation;
 Position? currentPosition;
 String? LocationName = '';
 String? InitialName;
-String? type = 'metric';
+String? type = 'metric'; // 'metric' or 'imperial'
 String? lang = 'vi-vn';
 String API_KEY = '2b5630205440fa5d9747bc910681e783';
 String HereAPI = 't8j30ZcKTjahgwuPbHRDWmqx1JXdaBg4Lz7a82tixWs';

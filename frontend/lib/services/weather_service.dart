@@ -42,7 +42,7 @@ class WeatherService {
   // Fetch weather data from API
   static Future<void> fetchWeatherData(double lat, double lon) async {
     final uri =
-        'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$API_KEY&units=$type';
+        'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$API_KEY&units=$type'; //Thay đổi độ C/F ở cái biến type
     try {
       final response = await http.get(Uri.parse(uri));
       if (response.statusCode == 200) {
