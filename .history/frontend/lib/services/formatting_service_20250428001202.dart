@@ -19,6 +19,7 @@ class FormattingService {
         DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
     final int weekday = dateTime.weekday;
 
+    // Map số ngày trong tuần thành key dịch
     const List<String> dayKeys = [
       'monday',
       'tuesday',

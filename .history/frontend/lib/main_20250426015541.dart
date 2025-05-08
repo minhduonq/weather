@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:frontend/screens/HomePage.dart';
 import 'package:frontend/screens/weather_stogare.dart';
-import 'package:frontend/services/translations.dart';
 //import 'package:frontend/services/widget_service.dart';
 
 void main() async {
@@ -18,12 +16,9 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: HomePage(),
-      translations: AppTranslations(),
-      locale: Locale('vi'),
-      fallbackLocale: Locale('en'),
     );
   }
 }
