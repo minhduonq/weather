@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:frontend/screens/weather_stogare.dart';
 import 'package:get/get.dart';
 
 import 'package:flutter/cupertino.dart';
@@ -279,7 +280,7 @@ class _HomePageState extends State<HomePage> {
             ),
             onPressed: () {
               Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => ManageLocationsScreen()));
+                  builder: (context) => WeatherStorageScreen()));
             },
           ),
 

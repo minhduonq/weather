@@ -1,171 +1,135 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/services/database.dart';
+import 'package:frontend/screens/HomePage.dart';
+import 'package:geolocator/geolocator.dart';
+import '../services/constants.dart';
+import 'SearchPlace.dart';
 
-class ManageLocationsScreen extends StatefulWidget {
+class LocationManage extends StatefulWidget {
   @override
-  _ManageLocationsScreenState createState() => _ManageLocationsScreenState();
+  _LocationManageState createState() => _LocationManageState();
 }
 
-class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
-  List<bool> selectedLocations = [];
-  int? favouriteIndex;
-
-  final DatabaseHelper dbHelper = DatabaseHelper();
-  final db = DatabaseHelper();
+class _LocationManageState extends State<LocationManage> {
+  bool editMode = false; // Variable to track edit mode
+  List<bool> selectedToDelete =
+      []; // List to track selected places for deletion
 
   @override
   void initState() {
     super.initState();
-    _loadLocations();
-  }
-
-  // Tải dữ liệu từ cơ sở dữ liệu
-  Future<void> _loadLocations() async {
-    List<Map<String, dynamic>> locationData = await dbHelper.getAllLocations();
-    setState(() {
-      selectedLocations = List.generate(locationData.length, (_) => false);
-    });
-  }
-
-  // Chọn tất cả các địa điểm
-  void _selectAll() {
-    setState(() {
-      bool allSelected = selectedLocations.every((element) => element);
-      selectedLocations =
-          List.generate(selectedLocations.length, (_) => !allSelected);
-    });
-  }
-
-  // Thiết lập địa điểm yêu thích
-  void _setFavourite() async {
-    if (selectedLocations.contains(true)) {
-      int selectedLocationIndex = selectedLocations.indexOf(true);
-      List<Map<String, dynamic>> locations = await dbHelper.getAllLocations();
-      Map<String, dynamic> selectedLocation = locations[selectedLocationIndex];
-
-      setState(() {
-        favouriteIndex = selectedLocationIndex;
-      });
-      // Bạn có thể lưu lại thông tin yêu thích vào cơ sở dữ liệu ở đây
-    }
-  }
-
-  // Xóa các địa điểm đã chọn
-  void _deleteSelected() async {
-    List<Map<String, dynamic>> locations = await dbHelper.getAllLocations();
-    for (int i = locations.length - 1; i >= 0; i--) {
-      if (selectedLocations[i]) {
-        await dbHelper.deleteLocation(locations[i]['id']);
-        setState(() {
-          selectedLocations.removeAt(i);
-        });
-      }
-    }
+    // Initialize selectedToDelete list based on selectedPlaces length
+    selectedToDelete = List.generate(selectedPlaces.length, (index) => false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Selected Locations',
-            style: TextStyle(color: Colors.grey[700])),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: GestureDetector(
-              onTap: _selectAll,
-              child: Center(
-                child: Text("All", style: TextStyle(color: Colors.grey)),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: dbHelper.getAllLocations(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No locations available.'));
-          }
-
-          List<Map<String, dynamic>> locations = snapshot.data!;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              sectionTitle('Favourite location'),
-              locationTile(0, locations),
-              sectionTitle('Other locations'),
-              for (int i = 1; i < locations.length; i++)
-                locationTile(i, locations),
-            ],
-          );
-        },
-      ),
-      bottomNavigationBar: BottomAppBar(
-        child: Row(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: TextButton.icon(
-                onPressed: _setFavourite,
-                icon: Icon(Icons.check),
-                label: Text('Set favourite'),
-              ),
-            ),
-            VerticalDivider(),
-            Expanded(
-              child: TextButton.icon(
-                onPressed: _deleteSelected,
-                icon: Icon(Icons.delete),
-                label: Text('Delete'),
-              ),
-            ),
+            Text('Places Management'),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => SearchPlace()));
+                  },
+                  icon: Icon(Icons.add),
+                ),
+                SizedBox(width: 10),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      // Toggle edit mode
+                      editMode = !editMode;
+                      if (!editMode) {
+                        // Clear selectedToDelete list when exiting edit mode
+                        selectedToDelete = List.generate(
+                            selectedPlaces.length, (index) => false);
+                      }
+                    });
+                  },
+                  icon: Icon(Icons.edit),
+                ),
+                SizedBox(width: 10),
+                // Confirm button to delete selected places
+                editMode
+                    ? IconButton(
+                        onPressed: deleteSelectedPlaces,
+                        icon: Icon(Icons.delete_forever_rounded),
+                      )
+                    : Container(),
+              ],
+            )
           ],
         ),
       ),
-    );
-  }
-
-  Widget sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Text(title, style: TextStyle(color: Colors.grey)),
-    );
-  }
-
-  Widget locationTile(int index, List<Map<String, dynamic>> locations) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[300],
-          border: Border.all(
-            color: selectedLocations[index] ? Colors.blue : Colors.transparent,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: ListTile(
-          leading: Checkbox(
-            value: selectedLocations[index],
-            onChanged: (bool? value) {
-              setState(() {
-                selectedLocations[index] = value!;
-              });
+      body: ListView.builder(
+        itemCount: selectedPlaces.length,
+        itemBuilder: (context, index) {
+          final place = selectedPlaces[index];
+          return ListTile(
+            title: Row(
+              children: [
+                // Display checkbox only in edit mode
+                editMode
+                    ? Checkbox(
+                        value: selectedToDelete[index],
+                        onChanged: (value) {
+                          setState(() {
+                            selectedToDelete[index] = value!;
+                          });
+                        },
+                      )
+                    : Container(),
+                SizedBox(
+                    width: editMode
+                        ? 10
+                        : 0), // Add spacing between checkbox and place name
+                Text(place['name']),
+              ],
+            ),
+            onTap: () {
+              if (!editMode) {
+                setState(() {
+                  LocationName = OfficialName(place['name']);
+                  KeyLocation = Position(
+                    latitude: place['latitude'],
+                    longitude: place['longitude'],
+                    timestamp: DateTime.now(),
+                    accuracy: 0.0,
+                    altitude: 0.0,
+                    heading: 0.0,
+                    speed: 0.0,
+                    speedAccuracy: 0.0,
+                    altitudeAccuracy: 0.0,
+                    headingAccuracy: 0.0,
+                  );
+                  currentPosition = KeyLocation;
+                  Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => HomePage()));
+                });
+              }
             },
-          ),
-          title: Text(locations[index]['name'],
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text(
-              '${locations[index]['latitude']}, ${locations[index]['longitude']}'),
-          trailing: Icon(Icons.expand_more),
-        ),
+          );
+        },
       ),
     );
+  }
+
+  // Function to delete selected places
+  void deleteSelectedPlaces() {
+    setState(() {
+      for (int i = selectedToDelete.length - 1; i >= 0; i--) {
+        if (selectedToDelete[i]) {
+          selectedPlaces.removeAt(i);
+          selectedToDelete.removeAt(i);
+        }
+      }
+      // Exit edit mode after deletion
+      editMode = false;
+    });
   }
 }

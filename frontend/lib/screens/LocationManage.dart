@@ -4,7 +4,6 @@ import 'package:geolocator/geolocator.dart';
 import '../services/constants.dart';
 import 'SearchPlace.dart';
 
-
 class LocationManage extends StatefulWidget {
   @override
   _LocationManageState createState() => _LocationManageState();
@@ -12,7 +11,8 @@ class LocationManage extends StatefulWidget {
 
 class _LocationManageState extends State<LocationManage> {
   bool editMode = false; // Variable to track edit mode
-  List<bool> selectedToDelete = []; // List to track selected places for deletion
+  List<bool> selectedToDelete =
+      []; // List to track selected places for deletion
 
   @override
   void initState() {
@@ -25,44 +25,37 @@ class _LocationManageState extends State<LocationManage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Places Management'),
-            Row(
-              children: [
-                IconButton(
-                  onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => SearchPlace()));
-                  },
-                  icon: Icon(Icons.add),
-                ),
-                SizedBox(width: 10),
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      // Toggle edit mode
-                      editMode = !editMode;
-                      if (!editMode) {
-                        // Clear selectedToDelete list when exiting edit mode
-                        selectedToDelete = List.generate(selectedPlaces.length, (index) => false);
-                      }
-                    });
-                  },
-                  icon: Icon(Icons.edit),
-                ),
-                SizedBox(width: 10),
-                // Confirm button to delete selected places
-                editMode
-                    ? IconButton(
-                  onPressed: deleteSelectedPlaces,
-                  icon: Icon(Icons.delete_forever_rounded),
-                )
-                    : Container(),
-              ],
-            )
-          ],
-        ),
+        title: Text('Places Management'),
+        actions: [
+          // Move these buttons to actions instead of in the title
+          IconButton(
+            onPressed: () {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (context) => SearchPlace()));
+            },
+            icon: Icon(Icons.add),
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                // Toggle edit mode
+                editMode = !editMode;
+                if (!editMode) {
+                  // Clear selectedToDelete list when exiting edit mode
+                  selectedToDelete =
+                      List.generate(selectedPlaces.length, (index) => false);
+                }
+              });
+            },
+            icon: Icon(Icons.edit),
+          ),
+          // Confirm button to delete selected places
+          if (editMode)
+            IconButton(
+              onPressed: deleteSelectedPlaces,
+              icon: Icon(Icons.delete_forever_rounded),
+            ),
+        ],
       ),
       body: ListView.builder(
         itemCount: selectedPlaces.length,
@@ -72,18 +65,23 @@ class _LocationManageState extends State<LocationManage> {
             title: Row(
               children: [
                 // Display checkbox only in edit mode
-                editMode
-                    ? Checkbox(
-                  value: selectedToDelete[index],
-                  onChanged: (value) {
-                    setState(() {
-                      selectedToDelete[index] = value!;
-                    });
-                  },
-                )
-                    : Container(),
-                SizedBox(width: editMode ? 10 : 0), // Add spacing between checkbox and place name
-                Text(place['name']),
+                if (editMode)
+                  Checkbox(
+                    value: selectedToDelete[index],
+                    onChanged: (value) {
+                      setState(() {
+                        selectedToDelete[index] = value!;
+                      });
+                    },
+                  ),
+                SizedBox(
+                    width: editMode
+                        ? 10
+                        : 0), // Add spacing between checkbox and place name
+                Expanded(
+                    child: Text(place['name'],
+                        overflow: TextOverflow
+                            .ellipsis)), // Wrap with Expanded to prevent overflow
               ],
             ),
             onTap: () {
@@ -103,7 +101,8 @@ class _LocationManageState extends State<LocationManage> {
                     headingAccuracy: 0.0,
                   );
                   currentPosition = KeyLocation;
-                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => HomePage()));
+                  Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => HomePage()));
                 });
               }
             },
@@ -127,4 +126,3 @@ class _LocationManageState extends State<LocationManage> {
     });
   }
 }
-
