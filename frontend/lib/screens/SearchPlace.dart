@@ -167,6 +167,11 @@ class _SearchPlaceState extends State<SearchPlace> {
                   title: Text(_places[index]),
                   onTap: () {
                     _selectPlace(_places[index], index);
+<<<<<<< HEAD
+=======
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => LocationManage()));
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
                   },
                 );
               },

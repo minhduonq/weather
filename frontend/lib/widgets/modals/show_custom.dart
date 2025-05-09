@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/manage_location.dart';
 import 'package:frontend/screens/manage_noete.dart';
+<<<<<<< HEAD
 
 import 'package:frontend/screens/weather_stogare.dart';
+=======
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
 
 void showCustomModal(BuildContext context) {
   showDialog(
@@ -32,12 +35,13 @@ void showCustomModal(BuildContext context) {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    title: Text('Edit List'),
-                    trailing: Icon(Icons.edit, size: 20),
+                    title: Text('Notifications'),
+                    trailing: Icon(Icons.notifications_none, size: 20),
                     onTap: () {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
+<<<<<<< HEAD
                             builder: (context) => WeatherStorageScreen(),
                           ));
                     },
@@ -54,6 +58,12 @@ void showCustomModal(BuildContext context) {
                           ));
                     },
                   ),
+=======
+                            builder: (context) => ManageNote(),
+                          ));
+                    },
+                  ),
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
                 ],
               ),
             ),

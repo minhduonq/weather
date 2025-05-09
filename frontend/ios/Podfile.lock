@@ -20,6 +20,12 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
+<<<<<<< HEAD
+=======
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   - sqflite_darwin (0.0.4):
     - Flutter
     - FlutterMacOS
@@ -32,6 +38,10 @@ DEPENDENCIES:
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
   - home_widget (from `.symlinks/plugins/home_widget/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+<<<<<<< HEAD
+=======
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
 
 SPEC REPOS:
@@ -53,6 +63,11 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/home_widget/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
+<<<<<<< HEAD
+=======
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   sqflite_darwin:
     :path: ".symlinks/plugins/sqflite_darwin/darwin"
 
@@ -65,6 +80,10 @@ SPEC CHECKSUMS:
   home_widget: f169fc41fd807b4d46ab6615dc44d62adbf9f64f
   OrderedSet: e539b66b644ff081c73a262d24ad552a69be3a94
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
+<<<<<<< HEAD
+=======
+  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
 
 PODFILE CHECKSUM: 4305caec6b40dde0ae97be1573c53de1882a07e5

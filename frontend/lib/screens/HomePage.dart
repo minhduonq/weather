@@ -1,4 +1,10 @@
 import 'dart:math';
+<<<<<<< HEAD
+=======
+import 'package:frontend/screens/weather_stogare.dart';
+import 'package:get/get.dart';
+
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/LocationManage.dart';
@@ -13,8 +19,14 @@ import '../services/weather_service.dart';
 import '../services/formatting_service.dart';
 import '../services/location_service.dart';
 import '../services/database.dart';
+<<<<<<< HEAD
+=======
+import '../services/helpTrans.dart';
+
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
 import 'SearchPlace.dart';
 import 'Setting.dart';
+import 'Chatbot.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -48,10 +60,19 @@ class _HomePageState extends State<HomePage> {
   Future<void> _initializeApp() async {
     await _loadSavedLocations();
     if (KeyLocation != null) {
+<<<<<<< HEAD
+=======
+      // If we already have a location (from drawer selection), load its data
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
       await WeatherService.loadWeatherData(
           KeyLocation!.latitude, KeyLocation!.longitude);
       await WeatherService.getLocationName(
           KeyLocation!.latitude, KeyLocation!.longitude);
+<<<<<<< HEAD
+=======
+
+      // Tìm và đặt index cho vị trí hiện tại
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
       _setCurrentLocationIndex();
     } else {
       await _requestLocationAndLoadData();
@@ -127,8 +148,22 @@ class _HomePageState extends State<HomePage> {
             KeyLocation!.latitude, KeyLocation!.longitude);
         setState(() {});
       }
+<<<<<<< HEAD
     } catch (e) {
       print('Error getting location: $e');
+=======
+
+      // Load weather data
+      await WeatherService.loadWeatherData(
+          KeyLocation!.latitude, KeyLocation!.longitude);
+      await WeatherService.getLocationName(
+          KeyLocation!.latitude, KeyLocation!.longitude);
+      print(KeyLocation!.latitude);
+      print(KeyLocation!.longitude);
+
+      // Update UI
+      setState(() {});
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
     }
   }
 
@@ -143,7 +178,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   Color _getBackgroundColor() {
+<<<<<<< HEAD
     return _isDaytime() ? Color(0xFF66CEED) : Color(0xFF295EA7);
+=======
+    return _isDaytime()
+        ? Color(0xFF66CEED) // Màu ban ngày (màu hiện tại)
+        : Color(0xFF295EA7); // Màu ban đêm
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   }
 
   void _updateMap() {
@@ -152,12 +193,18 @@ class _HomePageState extends State<HomePage> {
         source:
             '''updateMap(${KeyLocation!.latitude}, ${KeyLocation!.longitude});''',
       );
+<<<<<<< HEAD
+=======
+      print(
+          "Map updated to: ${KeyLocation!.latitude}, ${KeyLocation!.longitude}");
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
     }
   }
 
   Future<void> _refreshData() async {
     if (!mounted) return;
     final currentLocation = _locations[_currentLocationIndex];
+<<<<<<< HEAD
     try {
       await WeatherService.fetchWeatherData(
           currentLocation['latitude'], currentLocation['longitude']);
@@ -169,6 +216,17 @@ class _HomePageState extends State<HomePage> {
       setState(() {});
     } catch (e) {
       print('Error refreshing data: $e');
+=======
+
+    // Load new data from API
+    await WeatherService.fetchWeatherData(
+        currentLocation['latitude'], currentLocation['longitude']);
+
+    // Update location name if needed
+    if (!currentLocation['isCurrent']) {
+      await WeatherService.getLocationName(
+          currentLocation['latitude'], currentLocation['longitude']);
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
     }
   }
 
@@ -217,11 +275,30 @@ class _HomePageState extends State<HomePage> {
                 color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold),
           ),
           actions: [
+<<<<<<< HEAD
+=======
+            // Nút chatbot
+            IconButton(
+              icon: Icon(Icons.chat, color: Colors.white, size: 30),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => ChatbotScreen()),
+                );
+              },
+            ),
+
+            // Nút tìm kiếm
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
             IconButton(
               icon: Icon(Icons.search, color: Colors.white, size: 32),
               onPressed: () {
                 Navigator.of(context).push(
+<<<<<<< HEAD
                     MaterialPageRoute(builder: (context) => SearchPlace()));
+=======
+                  MaterialPageRoute(builder: (context) => SearchPlace()),
+                );
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
               },
             ),
           ],
@@ -276,6 +353,7 @@ class _HomePageState extends State<HomePage> {
             icon: Row(
               children: [
                 Icon(Icons.menu, color: Colors.white),
+<<<<<<< HEAD
                 SizedBox(width: 10),
               ],
             ),
@@ -285,6 +363,16 @@ class _HomePageState extends State<HomePage> {
                   builder: (context) => WeatherStorageScreen(),
                 ),
               );
+=======
+                SizedBox(
+                  width: 10,
+                ),
+              ],
+            ),
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => WeatherStorageScreen()));
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
             },
           ),
           Row(
@@ -315,6 +403,10 @@ class _HomePageState extends State<HomePage> {
               );
             }),
           ),
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
           IconButton(
             icon: Icon(Icons.settings, color: Colors.white),
             onPressed: () {
@@ -328,6 +420,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMainContent() {
+<<<<<<< HEAD
     return RefreshIndicator(
       onRefresh: _refreshData,
       child: SingleChildScrollView(
@@ -338,6 +431,53 @@ class _HomePageState extends State<HomePage> {
               // Location and Temperature
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+=======
+    if (_locations.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return PageView.builder(
+      controller: _pageController,
+      itemCount: _locations.length,
+      onPageChanged: (index) {
+        setState(() {
+          _currentLocationIndex = index;
+          // Cập nhật KeyLocation và LocationName
+          final location = _locations[index];
+          LocationName = location['name'];
+          KeyLocation = Position(
+            latitude: location['latitude'],
+            longitude: location['longitude'],
+            timestamp: DateTime.now(),
+            accuracy: 0.0,
+            altitude: 0.0,
+            heading: 0.0,
+            speed: 0.0,
+            speedAccuracy: 0.0,
+            altitudeAccuracy: 0.0,
+            headingAccuracy: 0.0,
+          );
+
+          // Load weather data for this location
+          WeatherService.loadWeatherData(
+                  location['latitude'], location['longitude'])
+              .then((_) {
+            _updateMap();
+            setState(() {}); // Update UI with new data
+          });
+        });
+      },
+      itemBuilder: (context, index) {
+        return RefreshIndicator(
+          onRefresh: _refreshData,
+          color: Colors.white,
+          backgroundColor: Colors.lightBlueAccent,
+          child: SingleChildScrollView(
+            physics: AlwaysScrollableScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
                 children: [
                   SizedBox(width: 4),
                   Text(
@@ -346,6 +486,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
               ),
+<<<<<<< HEAD
               if (currentData.containsKey('main'))
                 Text(
                   '${currentData['main']['temp'].round()}\u00B0',
@@ -353,9 +494,79 @@ class _HomePageState extends State<HomePage> {
                       fontSize: 60,
                       fontWeight: FontWeight.bold,
                       color: Colors.white),
+=======
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Widget _buildLocationIndicator() {
+  //   return Column(
+  //     mainAxisSize: MainAxisSize.min,
+  //     children: [
+  //       // Các chỉ báo trang
+  //       Row(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: List.generate(_locations.length, (index) {
+  //           bool isActive = index == _currentLocationIndex;
+  //           return GestureDetector(
+  //             onTap: () {
+  //               if (_pageController.hasClients) {
+  //                 _pageController.animateToPage(
+  //                   index,
+  //                   duration: Duration(milliseconds: 300),
+  //                   curve: Curves.easeInOut,
+  //                 );
+  //               }
+  //             },
+  //             child: AnimatedContainer(
+  //               duration: Duration(milliseconds: 300),
+  //               margin: EdgeInsets.symmetric(horizontal: 5),
+  //               height: isActive ? 12 : 8,
+  //               width: isActive ? 12 : 8,
+  //               decoration: BoxDecoration(
+  //                 shape: BoxShape.circle,
+  //                 color: isActive ? Colors.white : Colors.white.withOpacity(0.5),
+  //               ),
+  //             ),
+  //           );
+  //         }),
+  //       ),
+  //       SizedBox(height: 8),
+  //     ],
+  //   );
+  // }
+
+  Widget _buildCurrentWeather() {
+    return Container(
+      height: 180, // Chiều cao cố định cho container
+      width: double.infinity, // Chiều rộng đầy đủ
+      child: Stack(
+        fit: StackFit.expand, // Đảm bảo Stack điền đầy Container
+        children: [
+          // Phần thông tin nhiệt độ
+          Positioned(
+            left: 16,
+            top: 0,
+            right:
+                100, // Để lại không gian cho icon, nhưng text có thể đè lên khi cần
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${currentData['main']['temp']}\u00B0',
+                  style: TextStyle(
+                      fontSize: 55,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                  overflow: TextOverflow.visible, // Cho phép text tràn ra
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
                 ),
               if (currentData.containsKey('main'))
                 Text(
+<<<<<<< HEAD
                   'Feels like ${currentData['main']['feels_like'].round()}\u00B0',
                   style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
@@ -566,9 +777,91 @@ class _HomePageState extends State<HomePage> {
                                 ? '${currentData['visibility'] ~/ 1000} km'
                                 : 'N/A',
                             style: TextStyle(fontSize: 24, color: Colors.white),
+=======
+                  currentData.isNotEmpty &&
+                          currentData['weather'] != null &&
+                          currentData['weather'].isNotEmpty
+                      ? '${currentData['weather'][0]['main']}'
+                      : '',
+                  style: TextStyle(fontSize: 22, color: Colors.white),
+                ),
+                SizedBox(height: 10),
+                Text(
+                    '${currentData['main']['temp_min']}\u00B0 / ${currentData['main']['temp_max']}\u00B0',
+                    style: TextStyle(color: Colors.white, fontSize: 18)),
+                Text('Feel like ${currentData['main']['feels_like']}\u00B0',
+                    style: TextStyle(color: Colors.white, fontSize: 18)),
+              ],
+            ),
+          ),
+
+          // Icon thời tiết - đặt phía bên phải
+          Positioned(
+            right: 10,
+            top: 0,
+            child: SvgPicture.asset(
+                FormattingService.getWeatherIconPath(
+                    currentData['weather'][0]['icon']),
+                height: 150,
+                width: 150),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Implement remaining UI components similarly
+  Widget _buildHourlyForecast() {
+    // Implement the hourly forecast UI component
+    return Container(
+      width: MediaQuery.of(context).size.width - 20,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: Color(0xFFBBDFEA).withAlpha(38),
+      ),
+      child: ListTile(
+        title: Text(
+            currentData.isNotEmpty
+                ? FormattingService.capitalize(
+                    currentData['weather'][0]['description'])
+                : '',
+            style: TextStyle(color: Colors.white, fontSize: 20)),
+        subtitle: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: List.generate(
+              (hourlyData['list']?.length ?? 0),
+              (index) {
+                double popValue =
+                    (hourlyData['list'][index]['pop'] ?? 0).toDouble();
+                int pop1 = (popValue * 100).round();
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      Text(
+                          '${FormattingService.formatEpochTimeToTime(hourlyData['list'][index]['dt'], currentData['timezone'])}',
+                          style: TextStyle(color: Colors.white)),
+                      SvgPicture.asset(
+                        FormattingService.getWeatherIconPath(
+                          hourlyData['list'][index]['weather'][0]['icon'],
+                        ),
+                        width: 50,
+                        height: 50,
+                      ),
+                      Text('${hourlyData['list'][index]['main']['temp']}\u00B0',
+                          style: TextStyle(color: Colors.white)),
+                      Row(
+                        children: [
+                          SvgPicture.asset(
+                            "assets/svgs/pop.svg",
+                            width: 15,
+                            height: 15,
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
                           ),
                         ],
                       ),
+<<<<<<< HEAD
                     ),
                   ),
                   Expanded(
@@ -595,12 +888,169 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                       ),
+=======
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDailyForecast() {
+    if (dailyData.isEmpty || dailyData['list'] == null) {
+      return Container();
+    }
+
+    // Tạo map để nhóm dữ liệu theo ngày
+    Map<String, dynamic> uniqueDays = {};
+
+    // Nhóm dữ liệu theo ngày
+    for (var item in dailyData['list']) {
+      final dayName = FormattingService.getDayName(item['dt']);
+
+      // Chỉ lấy dữ liệu đầu tiên của mỗi ngày
+      if (!uniqueDays.containsKey(dayName)) {
+        uniqueDays[dayName] = item;
+      }
+    }
+
+    // Chuyển lại thành danh sách để hiển thị
+    List<MapEntry<String, dynamic>> sortedEntries = uniqueDays.entries.toList();
+
+    return Container(
+      width: MediaQuery.of(context).size.width - 20,
+      padding: EdgeInsets.symmetric(horizontal: 0),
+      decoration: BoxDecoration(
+        color: Color(0xFFBBDFEA).withAlpha(38),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: ListTile(
+        title: trWithStyle(
+          'daily_forecast',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Column(
+          children: List.generate(
+            min(sortedEntries.length, 7), // Giới hạn tối đa 7 ngày
+            (index) {
+              final entry = sortedEntries[index];
+              final dayData = entry.value;
+              final dayName = entry.key;
+
+              var maxTemp = double.parse(dayData['temp']['max'].toString());
+              var minTemp = double.parse(dayData['temp']['min'].toString());
+              final weatherIcon = dayData['weather'][0]['icon'];
+              var pop = double.parse(dayData['pop'].toString());
+              int max = maxTemp.round();
+              int min = minTemp.round();
+              int pop1 = (pop * 100).round();
+
+              return _buildDailyRow(dayName, pop1, weatherIcon, max, min);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDailyRow(
+      String dayName, int pop, String weatherIcon, int max, int min) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            // Day name (giảm chiều rộng để dành không gian cho nhiệt độ)
+            Container(
+              width: (MediaQuery.of(context).size.width - 20) / 10 * 2.5,
+              child: Text(
+                '$dayName',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 18),
+                overflow: TextOverflow
+                    .ellipsis, // Thêm overflow để cắt văn bản nếu cần
+              ),
+            ),
+
+            // Pop (giữ nguyên)
+            Container(
+              width: (MediaQuery.of(context).size.width - 20) / 10 * 1.5,
+              child: Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/svgs/pop.svg',
+                    width: 15,
+                  ),
+                  Text(
+                    ' $pop%',
+                    style: TextStyle(color: Colors.white, fontSize: 15),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+
+            // Weather icon
+            Container(
+              width: (MediaQuery.of(context).size.width - 20) /
+                  10 *
+                  1.5, // Giảm nhẹ chiều rộng
+              child: SvgPicture.asset(
+                FormattingService.getWeatherIconPath(weatherIcon),
+                width: 35,
+                height: 35,
+              ),
+            ),
+
+            // Temperature values (tăng chiều rộng để chứa đủ giá trị độ F lớn)
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Max temperature
+                  Container(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '$max\u00B0',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 19),
+                      overflow:
+                          TextOverflow.visible, // Cho phép hiển thị đầy đủ
+                    ),
+                  ),
+                  SizedBox(width: 10), // Khoảng cách giữa max và min
+
+                  // Min temperature
+                  Container(
+                    width: 45, // Chiều rộng cố định để chứa đủ độ F
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '$min\u00B0',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 18),
+                      textAlign: TextAlign.right,
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 10),
 
+<<<<<<< HEAD
               // Sun Arc
               if (currentData.containsKey('sys'))
                 Container(
@@ -627,6 +1077,182 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ],
                     ),
+=======
+  Widget _buildDetailBox(String title, String value) {
+    return Expanded(
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Color(0xFFBBDFEA).withAlpha(38),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style:
+                  TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 24, color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeatherDetailsGrid() {
+    return Container(
+      width: MediaQuery.of(context).size.width - 20,
+      child: GridView.count(
+        physics: NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        crossAxisCount: 2, // 2 cột
+        childAspectRatio: 0.9, // Tỷ lệ chiều rộng/chiều cao
+        mainAxisSpacing: 10.0, // Khoảng cách giữa các hàng
+        crossAxisSpacing: 10.0, // Khoảng cách giữa các cột
+        children: [
+          // Độ ẩm
+          _buildDetailCard(
+            icon: 'assets/svgs/humidity.svg',
+            title: 'Humidity'.tr,
+            value: '${currentData['main']['humidity']}%',
+            subtitle: '',
+            progress: currentData['main']['humidity'] / 100,
+            colorStart: Colors.blue.shade100,
+            colorEnd: Colors.blue.shade500,
+          ),
+
+          // Áp suất
+          _buildDetailCard(
+            icon: 'assets/svgs/pressure.svg',
+            title: 'Pressure'.tr,
+            value: '${currentData['main']['pressure']} mb',
+            subtitle: '',
+            showGauge: true,
+            gaugeValue: currentData['main']['pressure'] /
+                1050, // Chia cho giá trị max để có tỷ lệ từ 0-1
+          ),
+
+          // Gió
+          _buildDetailCard(
+            icon: 'assets/svgs/wind.svg',
+            title: 'Wind'.tr,
+            value: '',
+            subtitle: '',
+            showWindDirection: true,
+            windDegree: currentData['wind'] != null &&
+                    currentData['wind']['deg'] != null
+                ? currentData['wind']['deg'].toDouble()
+                : 0.0,
+            windSpeed: currentData['wind'] != null &&
+                    currentData['wind']['speed'] != null
+                ? currentData['wind']['speed'].toDouble()
+                : 0.0,
+          ),
+
+          // Tầm nhìn
+          _buildDetailCard(
+            icon: 'assets/svgs/visibility.svg',
+            title: 'Visibility'.tr,
+            value:
+                '${(currentData['visibility'] / 1000).toStringAsFixed(2)} km',
+            subtitle: '',
+          ),
+
+          // Sea Level
+          _buildDetailCard(
+            icon: 'assets/svgs/sea_level.svg',
+            title: 'Sea Level'.tr,
+            value: '${currentData['main']['sea_level']} hPa',
+            subtitle: '',
+          ),
+
+          _buildDetailCard(
+            icon: 'assets/svgs/cloudiness.svg',
+            title: 'Clouds'.tr,
+            value: '${currentData['clouds']['all']}%',
+            subtitle: '',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailCard({
+    required String icon,
+    required String title,
+    required String value,
+    required String subtitle,
+    double? progress,
+    Color? colorStart,
+    Color? colorEnd,
+    bool showGauge = false,
+    bool showWindDirection = false,
+    double? gaugeValue,
+    double? windDegree,
+    double? windSpeed,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Color(0xFFBBDFEA).withAlpha(38),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header với icon và tiêu đề
+          Row(
+            children: [
+              SvgPicture.asset(
+                icon,
+                width: 20,
+                height: 20,
+                color: Colors.white,
+              ),
+              SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 8,
+          ),
+
+          // Subtitle
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          SizedBox(
+            height: 8,
+          ),
+          // Progress bar (nếu có)
+          if (progress != null)
+            Container(
+              margin: EdgeInsets.only(top: 10),
+              height: 6,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.white.withOpacity(0.3),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    colorStart?.withOpacity(1.0) ?? Colors.blue,
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
                   ),
                 ),
               SizedBox(height: 10),
@@ -645,6 +1271,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               SizedBox(height: 10),
 
+<<<<<<< HEAD
               // Map
               Container(
                 width: MediaQuery.of(context).size.width - 32,
@@ -668,6 +1295,132 @@ class _HomePageState extends State<HomePage> {
                     }
                   },
                 ),
+=======
+          // Wind Direction
+          if (showWindDirection && windDegree != null)
+            Container(
+              margin: EdgeInsets.only(top: 5),
+              height: 50,
+              alignment: Alignment.center,
+              child: CustomPaint(
+                painter: WindDirectionPainter(windDegree, windSpeed ?? 0),
+                size: Size(150, 150),
+              ),
+            ),
+          Spacer(),
+          // Giá trị
+          Text(
+            value,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeatherMap() {
+    return Container(
+      width: MediaQuery.of(context).size.width - 20,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color:
+            Color(0xFFBBDFEA).withAlpha(38), // Màu xanh đậm như trong hình mẫu
+      ),
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề "Radar và bản đồ"
+          Text(
+            'radar_and_map'.tr,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 12),
+
+          // Container cho bản đồ với bo tròn
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              height: 300,
+              width: double.infinity,
+              child: InAppWebView(
+                initialFile: "assets/weather_map.html",
+                onWebViewCreated: (controller) async {
+                  _webViewController = controller;
+                  _updateMap();
+                },
+              ),
+            ),
+          ),
+
+          // Nhiệt độ hiện tại
+          SizedBox(height: 12),
+          Text(
+            'Current temperature is ${currentData['main']['temp'].toStringAsFixed(0)}°',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w400,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSunriseSunset() {
+    // Lấy thời gian hiện tại tính bằng epoch seconds
+    final int currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    // Kiểm tra an toàn để tránh lỗi nếu không có dữ liệu
+    final int sunriseTime = currentData['sys']?['sunrise'] ?? currentTime;
+    final int sunsetTime =
+        currentData['sys']?['sunset'] ?? (currentTime + 43200); // Mặc định +12h
+
+    return Container(
+      width: MediaQuery.of(context).size.width - 20,
+      padding: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color:
+            Color(0xFFBBDFEA).withAlpha(38), // Màu xanh đậm như trong hình mẫu
+      ),
+      child: Column(
+        children: [
+          // Phần vẽ đường cong
+          SizedBox(
+            width: MediaQuery.of(context).size.width - 60,
+            height: 100,
+            child: CustomPaint(
+              painter: SunArcPainter(
+                  sunriseTime: sunriseTime,
+                  sunsetTime: sunsetTime,
+                  currentTime: currentTime),
+            ),
+          ),
+          SizedBox(height: 10),
+          // Phần hiển thị thời gian bình minh/hoàng hôn
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildSunTimeBox(
+                'Sunrise'.tr,
+                FormattingService.formatEpochTimeToTime(
+                    currentData['sys']['sunrise'], currentData['timezone']),
+              ),
+              _buildSunTimeBox(
+                'Sunset'.tr,
+                FormattingService.formatEpochTimeToTime(
+                    currentData['sys']['sunset'], currentData['timezone']),
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
               ),
               SizedBox(height: 10),
 
@@ -713,7 +1466,11 @@ class _HomePageState extends State<HomePage> {
         Row(
           children: [
             Text(
+<<<<<<< HEAD
               'Cập nhật lúc ${FormattingService.formatEpochTimeToTime(currentData['dt'], currentData['timezone'])}',
+=======
+              'Updated at ${FormattingService.formatEpochTimeToTime(currentData['dt'], currentData['timezone'])}   ',
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
               style: TextStyle(fontSize: 10, color: Colors.white),
             ),
           ],
@@ -766,10 +1523,25 @@ class SunArcPainter extends CustomPainter {
 
     canvas.drawArc(rect, pi, pi * progress, false, yellowPaint);
     canvas.drawArc(
+<<<<<<< HEAD
         rect, pi + pi * progress, pi * (1 - progress), false, grayPaint);
+=======
+      rect,
+      pi, // Bắt đầu từ bên trái
+      pi * progress, // Theo tiến độ
+      false,
+      yellowPaint,
+    );
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
 
     if (progress > 0 && progress < 1) {
+<<<<<<< HEAD
       final double angle = pi * progress + pi;
+=======
+      final double angle =
+          pi * progress + pi; // Góc tính từ pi (trái) + progress
+
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
       final double sunX = rect.center.dx + rect.width / 2 * cos(angle);
       final double sunY = rect.center.dy + rect.height / 2 * sin(angle);
 
@@ -859,7 +1631,12 @@ class WindDirectionPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
+<<<<<<< HEAD
     final radius = min(size.width, size.height) / 1.1;
+=======
+    final radius = min(size.width, size.height) /
+        1.1; // Giảm tỷ lệ từ 2 xuống 2.5 để có nhiều không gian hơn
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
 
     final bgPaint = Paint()
       ..color = Colors.white.withOpacity(0.3)
@@ -878,8 +1655,16 @@ class WindDirectionPainter extends CustomPainter {
     void drawCardinalPoints() {
       textPainter.text = TextSpan(text: 'N', style: textStyle);
       textPainter.layout();
+<<<<<<< HEAD
       textPainter.paint(canvas,
           Offset(center.dx - textPainter.width / 2, center.dy - radius - 20));
+=======
+      textPainter.paint(
+          canvas,
+          Offset(center.dx - textPainter.width / 2,
+              center.dy - radius - 20 // Thêm khoảng cách để hiển thị rõ hơn
+              ));
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
 
       textPainter.text = TextSpan(text: 'E', style: textStyle);
       textPainter.layout();
@@ -905,6 +1690,10 @@ class WindDirectionPainter extends CustomPainter {
     final arrowPositionX = center.dx + radius * 0.85 * cos(arrowAngle);
     final arrowPositionY = center.dy + radius * 0.85 * sin(arrowAngle);
 
+<<<<<<< HEAD
+=======
+    // Vẽ đầu mũi tên to hơn và rõ ràng hơn
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
     final arrowheadPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
@@ -921,8 +1710,17 @@ class WindDirectionPainter extends CustomPainter {
         arrowPositionY -
             backOffset * sin(arrowAngle) +
             arrowSize * sin(arrowAngle - pi / 2));
+<<<<<<< HEAD
     path.lineTo(arrowPositionX - backOffset * 0.7 * cos(arrowAngle),
         arrowPositionY - backOffset * 0.7 * sin(arrowAngle));
+=======
+
+    // Điểm giữa phía sau (lõm vào)
+    path.lineTo(arrowPositionX - backOffset * 0.7 * cos(arrowAngle),
+        arrowPositionY - backOffset * 0.7 * sin(arrowAngle));
+
+    // Điểm bên phải của mũi tên
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
     path.lineTo(
         arrowPositionX -
             backOffset * cos(arrowAngle) +
@@ -930,6 +1728,11 @@ class WindDirectionPainter extends CustomPainter {
         arrowPositionY -
             backOffset * sin(arrowAngle) +
             arrowSize * sin(arrowAngle + pi / 2));
+<<<<<<< HEAD
+=======
+
+    // Đóng path để tạo hình mũi tên hoàn chỉnh
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
     path.close();
 
     canvas.drawPath(path, arrowheadPaint);

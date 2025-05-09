@@ -32,7 +32,11 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
+<<<<<<< HEAD
       version: 5, // Incremented version for new notes schema
+=======
+      version: 2,
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -45,7 +49,8 @@ class DatabaseHelper {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       latitude REAL NOT NULL,
-      longitude REAL NOT NULL
+      longitude REAL NOT NULL,
+      is_current INTEGER DEFAULT 0
     );
     ''');
 
@@ -118,7 +123,11 @@ class DatabaseHelper {
       lat REAL NOT NULL,
       lon REAL NOT NULL
     );
+<<<<<<< HEAD
     ''');
+=======
+  ''');
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
 
     await db.execute('''
     CREATE TABLE notes(
@@ -139,6 +148,7 @@ class DatabaseHelper {
       'notification_enabled': 1,
       'notification_time': '20:00',
     });
+<<<<<<< HEAD
 
     log("Database tables created with initial data.");
   }
@@ -219,6 +229,34 @@ class DatabaseHelper {
       settings,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+=======
+  }
+
+  // Phương thức để xử lý nâng cấp database
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Thêm cột is_current vào bảng location nếu chưa tồn tại
+      try {
+        // Kiểm tra xem cột đã tồn tại chưa
+        var result = await db.rawQuery('PRAGMA table_info(location)');
+        bool hasIsCurrentColumn = false;
+        for (var column in result) {
+          if (column['name'] == 'is_current') {
+            hasIsCurrentColumn = true;
+            break;
+          }
+        }
+
+        if (!hasIsCurrentColumn) {
+          await db.execute(
+              'ALTER TABLE location ADD COLUMN is_current INTEGER DEFAULT 0');
+          log("Added is_current column to location table");
+        }
+      } catch (e) {
+        log("Error upgrading database: $e");
+      }
+    }
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   }
 
   Future<int> insertWeatherData(Map<String, dynamic> weatherData) async {
@@ -237,6 +275,7 @@ class DatabaseHelper {
 
   Future<int> insertLocation(Map<String, dynamic> location) async {
     final db = await database;
+<<<<<<< HEAD
     if (location['name'] == null ||
         location['latitude'] == null ||
         location['longitude'] == null) {
@@ -244,11 +283,31 @@ class DatabaseHelper {
           'Location data is incomplete: name, latitude, and longitude are required.');
     }
     try {
+=======
+
+    // Kiểm tra xem địa điểm đã tồn tại chưa (dựa trên tên)
+    final List<Map<String, dynamic>> existingLocations =
+        await getLocationByName(location['name']);
+
+    if (existingLocations.isNotEmpty) {
+      // Nếu địa điểm đã tồn tại, cập nhật thông tin
+      int locationId = existingLocations.first['id'];
+      await db.update(
+        'location',
+        location,
+        where: 'id = ?',
+        whereArgs: [locationId],
+      );
+      return locationId;
+    } else {
+      // Nếu là địa điểm mới, thêm vào database
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
       return await db.insert(
         'location',
         location,
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
+<<<<<<< HEAD
     } catch (e) {
       log("Error inserting location: $e");
       rethrow;
@@ -268,6 +327,8 @@ class DatabaseHelper {
     } catch (e) {
       log("Error updating location: $e");
       rethrow;
+=======
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
     }
   }
 
@@ -337,6 +398,57 @@ class DatabaseHelper {
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Tìm địa điểm theo tên
+  Future<List<Map<String, dynamic>>> getLocationByName(String name) async {
+    final db = await database;
+    return await db.query(
+      'location',
+      where: 'name = ?',
+      whereArgs: [name],
+    );
+  }
+
+  // Cập nhật trường is_current cho tất cả các vị trí
+  Future<void> resetCurrentLocation() async {
+    final db = await database;
+    await db.update(
+      'location',
+      {'is_current': 0},
+      where: 'is_current = ?',
+      whereArgs: [1],
+    );
+  }
+
+  // Cập nhật vị trí hiện tại
+  Future<void> setCurrentLocation(int locationId) async {
+    final db = await database;
+
+    // Đặt lại tất cả vị trí thành không phải vị trí hiện tại
+    await resetCurrentLocation();
+
+    // Đặt vị trí có id được chỉ định thành vị trí hiện tại
+    await db.update(
+      'location',
+      {'is_current': 1},
+      where: 'id = ?',
+      whereArgs: [locationId],
+    );
+  }
+
+  // Lấy vị trí hiện tại
+  Future<List<Map<String, dynamic>>> getCurrentLocation() async {
+    final db = await database;
+    return await db.query(
+      'location',
+      where: 'is_current = ?',
+      whereArgs: [1],
+    );
+  }
+
+  // Truy vấn tất cả dữ liệu từ bảng weather_data
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   Future<List<Map<String, dynamic>>> getAllWeatherData() async {
     final db = await database;
     try {
@@ -435,6 +547,10 @@ class DatabaseHelper {
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Get weather data by location ID
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   Future<List<Map<String, dynamic>>> getWeatherDataByLocationId(
       int locationId) async {
     final db = await database;
@@ -452,6 +568,10 @@ class DatabaseHelper {
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Get hourly data by location ID
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   Future<List<Map<String, dynamic>>> getHourlyDataByLocationId(
       int locationId) async {
     final db = await database;
@@ -468,6 +588,10 @@ class DatabaseHelper {
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Get daily data by location ID
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   Future<List<Map<String, dynamic>>> getDailyDataByLocationId(
       int locationId) async {
     final db = await database;
@@ -484,6 +608,10 @@ class DatabaseHelper {
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Xóa hourly data theo location_id
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   Future<int> deleteHourlyDataByLocationId(int locationId) async {
     final db = await database;
     try {
@@ -498,6 +626,10 @@ class DatabaseHelper {
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Xóa daily data theo location_id
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   Future<int> deleteDailyDataByLocationId(int locationId) async {
     final db = await database;
     try {
@@ -512,6 +644,10 @@ class DatabaseHelper {
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Xóa weather data theo location_id
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   Future<int> deleteWeatherDataByLocationId(int locationId) async {
     final db = await database;
     try {
@@ -541,6 +677,10 @@ class DatabaseHelper {
     log("Database has been completely reset!");
   }
 
+<<<<<<< HEAD
+=======
+  // Phương thức xóa dữ liệu nhưng giữ cấu trúc bảng
+>>>>>>> 5ac083889d9a16af0cc6cec4a1db08759213a99e
   Future<void> clearAllData() async {
     final db = await database;
     try {
@@ -554,5 +694,60 @@ class DatabaseHelper {
       log("Error clearing all data: $e");
       rethrow;
     }
+  }
+
+  Future<int> insertNote(Note note) async {
+    final db = await database;
+    try {
+      final id = await db.insert(
+        'notes',
+        note.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      return id; // Return the inserted ID
+    } catch (e) {
+      log("Error inserting note: $e");
+      rethrow;
+    }
+  }
+
+  Future<List<Note>> getNotes() async {
+    final db = await database;
+    try {
+      final maps = await db.query('notes');
+      return List.generate(maps.length, (i) => Note.fromMap(maps[i]));
+    } catch (e) {
+      log("Error querying notes: $e");
+      return [];
+    }
+  }
+
+  Future<int> deleteNote(int id) async {
+    final db = await database;
+    try {
+      return await db.delete(
+        'notes',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e) {
+      log("Error deleting note: $e");
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getSettings() async {
+    final db = await database;
+    final settings = await db.query('setting', limit: 1);
+    return settings.isNotEmpty ? settings.first : null;
+  }
+
+  Future<int> updateSettings(Map<String, dynamic> settings) async {
+    final db = await database;
+    return await db.update(
+      'setting',
+      settings,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 }
