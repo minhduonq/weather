@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/services/database.dart';
-import 'package:get/get.dart';
 
 class ManageLocationsScreen extends StatefulWidget {
   @override
@@ -68,7 +67,7 @@ class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('selected_locations'.tr,
+        title: Text('Selected Locations',
             style: TextStyle(color: Colors.grey[700])),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -78,7 +77,7 @@ class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
             child: GestureDetector(
               onTap: _selectAll,
               child: Center(
-                child: Text("all".tr, style: TextStyle(color: Colors.grey)),
+                child: Text("All", style: TextStyle(color: Colors.grey)),
               ),
             ),
           ),
@@ -92,16 +91,16 @@ class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('no_locations'.tr));
+            return Center(child: Text('No locations available.'));
           }
 
           List<Map<String, dynamic>> locations = snapshot.data!;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              sectionTitle('favourite_location'.tr),
+              sectionTitle('Favourite location'),
               locationTile(0, locations),
-              sectionTitle('other_locations'.tr),
+              sectionTitle('Other locations'),
               for (int i = 1; i < locations.length; i++)
                 locationTile(i, locations),
             ],
@@ -115,7 +114,7 @@ class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
               child: TextButton.icon(
                 onPressed: _setFavourite,
                 icon: Icon(Icons.check),
-                label: Text('set_favourite'.tr),
+                label: Text('Set favourite'),
               ),
             ),
             VerticalDivider(),
@@ -123,7 +122,7 @@ class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
               child: TextButton.icon(
                 onPressed: _deleteSelected,
                 icon: Icon(Icons.delete),
-                label: Text('delete'.tr),
+                label: Text('Delete'),
               ),
             ),
           ],

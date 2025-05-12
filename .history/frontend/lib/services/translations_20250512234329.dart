@@ -49,6 +49,13 @@ class AppTranslations extends Translations {
           'delete': 'Xóa',
           'favourite_location': 'Địa điểm yêu thích',
           'other_locations': 'Địa điểm khác',
+          'selected_locations': 'Selected Locations',
+          'all': 'All',
+          'no_locations': 'No locations available.',
+          'set_favourite': 'Set favourite',
+          'delete': 'Delete',
+          'favourite_location': 'Favourite location',
+          'other_locations': 'Other locations',
         },
         'en': {
           'current_temperature': 'Current temperature is {temp}°',
@@ -89,13 +96,6 @@ class AppTranslations extends Translations {
           'sunday': 'Sunday',
           'search': 'Search places',
           'type_place': 'Type your place name',
-          'selected_locations': 'Selected Locations',
-          'all': 'All',
-          'no_locations': 'No locations available.',
-          'set_favourite': 'Set favourite',
-          'delete': 'Delete',
-          'favourite_location': 'Favourite location',
-          'other_locations': 'Other locations',
         },
       };
 }

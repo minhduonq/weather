@@ -99,9 +99,9 @@ class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              sectionTitle('favourite_location'.tr),
+              sectionTitle('favourite_location'),
               locationTile(0, locations),
-              sectionTitle('other_locations'.tr),
+              sectionTitle('other_locations'),
               for (int i = 1; i < locations.length; i++)
                 locationTile(i, locations),
             ],

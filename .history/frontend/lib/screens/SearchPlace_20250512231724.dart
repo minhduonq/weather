@@ -159,7 +159,7 @@ class _SearchPlaceState extends State<SearchPlace> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: 'type_place'.tr,
+                      hintText: 'type.place'.tr,
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.only(left: 20, top: 10),
                       suffixIcon: Row(

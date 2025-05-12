@@ -91,11 +91,17 @@ class _SettingsPageState extends State<Setting> {
               onSelected: (value) async {
                 setState(() {
                   _temperatureUnit = value;
-                  type.value = value == 'C' ? 'metric' : 'imperial';
+                  type.value = value == 'C'
+                      ? 'metric'
+                      : 'imperial'; // cập nhật trạng thái toàn cục
                 });
 
+                // Lưu lại vào SharedPreferences
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setString('unit', value);
+
+                // Nếu bạn muốn gọi lại API ở đây thì thêm:
+                // weatherController.fetchWeather(); (ví dụ)
               },
             ),
             _buildDropdownTile(

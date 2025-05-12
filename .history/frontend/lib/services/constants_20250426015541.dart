@@ -1,14 +1,10 @@
 import 'package:geolocator/geolocator.dart';
-import 'package:get/get.dart';
 
 Position? KeyLocation;
 Position? currentPosition;
 String? LocationName = '';
 String? InitialName;
-
-RxString type = 'metric'.obs;
-String get temperatureSymbol => type.value == 'metric' ? '°C' : '°F';
-
+String? type = 'metric';
 String? lang = 'vi-vn';
 String API_KEY = '2b5630205440fa5d9747bc910681e783';
 String HereAPI = 't8j30ZcKTjahgwuPbHRDWmqx1JXdaBg4Lz7a82tixWs';
