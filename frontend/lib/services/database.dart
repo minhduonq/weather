@@ -1,3 +1,4 @@
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:frontend/models/note_model.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -22,11 +23,11 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDatabase();
+    _database = await initDatabase();
     return _database!;
   }
 
-  Future<Database> _initDatabase() async {
+  Future<Database> initDatabase() async {
     final databasePath = await getDatabasesPath();
     final path = join(databasePath, 'weather.db');
 
@@ -319,6 +320,34 @@ class DatabaseHelper {
     );
   }
 
+  // Future<void> showImmediateNotification({
+  //   required int id,
+  //   required String title,
+  //   required String body,
+  // }) async {
+  //   // Tùy thuộc vào plugin thông báo bạn đang sử dụng
+  //   // Ví dụ với flutter_local_notifications:
+  //   const AndroidNotificationDetails androidDetails =
+  //       AndroidNotificationDetails(
+  //     'weather_channel_id',
+  //     'Weather Notifications',
+  //     channelDescription: 'Channel for weather notifications',
+  //     importance: Importance.high,
+  //     priority: Priority.high,
+  //   );
+
+  //   const NotificationDetails platformDetails = NotificationDetails(
+  //     android: androidDetails,
+  //   );
+
+  //   await flutterLocalNotificationsPlugin.show(
+  //     id,
+  //     title,
+  //     body,
+  //     platformDetails,
+  //   );
+  // }
+
   // Get location by ID
   Future<List<Map<String, dynamic>>> getLocationById(int id) async {
     final db = await database;
@@ -412,7 +441,7 @@ class DatabaseHelper {
     await deleteDatabase(path);
 
     // Khởi tạo lại database
-    _database = await _initDatabase();
+    _database = await initDatabase();
 
     log("Database has been completely reset!");
   }
@@ -431,46 +460,6 @@ class DatabaseHelper {
     // await db.delete('location');
 
     log("All weather data has been cleared from the database!");
-  }
-
-  Future<int> insertNote(Note note) async {
-    final db = await database;
-    try {
-      final id = await db.insert(
-        'notes',
-        note.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      return id; // Return the inserted ID
-    } catch (e) {
-      log("Error inserting note: $e");
-      rethrow;
-    }
-  }
-
-  Future<List<Note>> getNotes() async {
-    final db = await database;
-    try {
-      final maps = await db.query('notes');
-      return List.generate(maps.length, (i) => Note.fromMap(maps[i]));
-    } catch (e) {
-      log("Error querying notes: $e");
-      return [];
-    }
-  }
-
-  Future<int> deleteNote(int id) async {
-    final db = await database;
-    try {
-      return await db.delete(
-        'notes',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
-    } catch (e) {
-      log("Error deleting note: $e");
-      rethrow;
-    }
   }
 
   Future<Map<String, dynamic>?> getSettings() async {

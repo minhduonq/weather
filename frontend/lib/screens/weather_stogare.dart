@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/screens/add_location_screen.dart';
 import 'package:frontend/services/database.dart';
 import 'package:frontend/widgets/modals/show_custom.dart';
-import 'package:http/http.dart' as http; // For making API calls
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:geolocator/geolocator.dart';
@@ -25,23 +25,109 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
   // Replace with your OpenWeatherMap API key
   final String apiKey = '2b5630205440fa5d9747bc910681e783';
 
+  // Cache control
+  final Duration maxCacheAge = Duration(minutes: 30);
+
   @override
   void initState() {
     super.initState();
-    initializeDateFormatting('vi', null).then((_) async {
-      // Tìm vị trí hiện tại trước khi tải các vị trí đã lưu
-      await getCurrentLocation();
-      await loadLocations();
+    initializeDateFormatting('vi', null).then((_) {
+      // Show cached data immediately, then refresh
+      _loadCachedDataAndRefresh();
     });
   }
 
-  // Hàm lấy vị trí hiện tại
+  // Load cached data first, then refresh in background
+  Future<void> _loadCachedDataAndRefresh() async {
+    // 1. First load cached weather data to display immediately
+    await _loadCachedData();
+
+    // 2. Then update current location and refresh data in background
+    if (mounted) {
+      _refreshDataInBackground();
+    }
+  }
+
+  // Load cached data from database
+  Future<void> _loadCachedData() async {
+    try {
+      final db = DatabaseHelper();
+      final dbLocations = await db.getAllLocations();
+      final storedWeatherData = await db.getAllWeatherData();
+
+      // Create a map of weather data by location ID for quick lookup
+      final weatherByLocation = {
+        for (var w in storedWeatherData) w['location_id']: w,
+      };
+
+      // Process locations
+      _processLocations(dbLocations, weatherByLocation);
+
+      setState(() {
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading cached data: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  // Refresh data in background
+  Future<void> _refreshDataInBackground() async {
+    try {
+      // Get current location in background
+      await getCurrentLocation();
+
+      // Load fresh data from API
+      await loadLocations(showLoadingIndicator: false);
+    } catch (e) {
+      print('Error refreshing data: $e');
+    }
+  }
+
+  // Process locations and sort them
+  void _processLocations(List<Map<String, dynamic>> locations,
+      Map<dynamic, dynamic> weatherByLocation) {
+    // Sort locations (current location first)
+    locations.sort((a, b) {
+      if (a['is_current'] == 1) return -1;
+      if (b['is_current'] == 1) return 1;
+      return 0;
+    });
+
+    // Add weather data to locations
+    final locationsWithWeather = locations.map((loc) {
+      return {
+        ...loc,
+        'weather': weatherByLocation[loc['id']],
+      };
+    }).toList();
+
+    // Update state with processed locations
+    setState(() {
+      allLocations = locationsWithWeather;
+      if (locationsWithWeather.isNotEmpty) {
+        favouriteLocations = [locationsWithWeather.first];
+        otherLocations = locationsWithWeather.skip(1).toList();
+      }
+    });
+  }
+
+  // Get current location with timeout
   Future<void> getCurrentLocation() async {
     try {
-      // Kiểm tra quyền truy cập vị trí
-      LocationPermission permission = await Geolocator.checkPermission();
+      // Check location permission with timeout
+      LocationPermission permission = await Geolocator.checkPermission()
+          .timeout(Duration(seconds: 3),
+              onTimeout: () => LocationPermission.denied);
+
       if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
+        permission = await Geolocator.requestPermission().timeout(
+            Duration(seconds: 5),
+            onTimeout: () => LocationPermission.denied);
+
         if (permission == LocationPermission.denied) {
           print('Location permissions are denied');
           return;
@@ -53,38 +139,35 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
         return;
       }
 
-      // Lấy vị trí hiện tại
+      // Get current position with timeout
       Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
-
-      setState(() {
-        currentPosition = position;
+        desiredAccuracy: LocationAccuracy.high,
+      ).timeout(Duration(seconds: 5), onTimeout: () {
+        throw Exception('Location timeout');
       });
 
-      // Lấy tên thành phố từ tọa độ vị trí
+      currentPosition = position;
+
+      // Get city name from coordinates
       final cityName = await getCityNameFromCoordinates(
           position.latitude, position.longitude);
-      if (cityName != null && cityName.isNotEmpty) {
-        setState(() {
-          currentLocationName = cityName;
-        });
 
-        // Lưu vị trí hiện tại vào database
+      if (cityName != null && cityName.isNotEmpty) {
+        currentLocationName = cityName;
+
+        // Update location in database
         final db = DatabaseHelper();
         final currentLocations = await db.getLocationByName(cityName);
+
         if (currentLocations.isEmpty) {
-          final locationId = await db.insertLocation({
+          await db.insertLocation({
             'name': cityName,
             'latitude': position.latitude,
             'longitude': position.longitude,
             'is_current': 1,
           });
-          print('Đã lưu vị trí hiện tại: $cityName với ID: $locationId');
         } else {
-          // Nếu vị trí đã tồn tại, cập nhật thành vị trí hiện tại
-          final locationId = currentLocations.first['id'];
-          await db.setCurrentLocation(locationId);
-          print('Cập nhật vị trí hiện tại: $cityName với ID: $locationId');
+          await db.setCurrentLocation(currentLocations.first['id']);
         }
       }
     } catch (e) {
@@ -92,22 +175,18 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
     }
   }
 
-  // Hàm lấy tên thành phố từ tọa độ
   Future<String?> getCityNameFromCoordinates(double lat, double lon) async {
     try {
       final url =
           'https://api.openweathermap.org/geo/1.0/reverse?lat=$lat&lon=$lon&limit=1&appid=$apiKey';
-      final response = await http.get(Uri.parse(url));
+      final response =
+          await http.get(Uri.parse(url)).timeout(Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         if (data.isNotEmpty) {
-          // Ưu tiên lấy tên quận/huyện (district)
-          String? cityName = data[0]['name'];
-          return cityName;
+          return data[0]['name'];
         }
-      } else {
-        print('Failed to get city name: ${response.statusCode}');
       }
     } catch (e) {
       print('Error getting city name: $e');
@@ -115,148 +194,168 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
     return null;
   }
 
-  Future<void> loadLocations() async {
-    setState(() {
-      isLoading = true;
-    });
+  Future<void> loadLocations({bool showLoadingIndicator = true}) async {
+    if (showLoadingIndicator) {
+      setState(() {
+        isLoading = true;
+      });
+    }
 
-    final db = DatabaseHelper();
-    final dbLocations = await db.getAllLocations();
+    try {
+      final db = DatabaseHelper();
+      final dbLocations = await db.getAllLocations();
 
-    // Tạo bản sao của danh sách để có thể sắp xếp
-    List<Map<String, dynamic>> locations =
-        List<Map<String, dynamic>>.from(dbLocations);
+      // Create a copy of the list that we can sort
+      List<Map<String, dynamic>> locations =
+          List<Map<String, dynamic>>.from(dbLocations);
 
-    // Đảm bảo vị trí hiện tại được đưa lên đầu danh sách
-    locations.sort((a, b) {
-      if (a['is_current'] == 1) return -1;
-      if (b['is_current'] == 1) return 1;
-      return 0;
-    });
+      // Make sure current location is at the top
+      locations.sort((a, b) {
+        if (a['is_current'] == 1) return -1;
+        if (b['is_current'] == 1) return 1;
+        return 0;
+      });
 
-    // Fetch weather data for each location
-    List<Map<String, dynamic>> weatherDataList = [];
-    for (var location in locations) {
+      // Get cached weather data first
+      final storedWeatherData = await db.getAllWeatherData();
+      final weatherByLocation = {
+        for (var w in storedWeatherData) w['location_id']: w,
+      };
+
+      // Check if we need to refresh any weather data
+      List<Future<void>> updateFutures = [];
+      final now = DateTime.now();
+
+      for (var location in locations) {
+        final weatherData = weatherByLocation[location['id']];
+        bool needsUpdate = true;
+
+        // Check if cache is valid
+        if (weatherData != null && weatherData['updatedAt'] != null) {
+          try {
+            final lastUpdated = DateTime.parse(weatherData['updatedAt']);
+            needsUpdate = now.difference(lastUpdated) > maxCacheAge;
+          } catch (e) {
+            needsUpdate = true;
+          }
+        }
+
+        if (needsUpdate) {
+          updateFutures.add(_updateWeatherForLocation(db, location));
+        }
+      }
+
+      // Update all weather data in parallel
+      if (updateFutures.isNotEmpty) {
+        await Future.wait(updateFutures);
+
+        // Reload weather data after updates
+        final updatedWeatherData = await db.getAllWeatherData();
+        final updatedWeatherByLocation = {
+          for (var w in updatedWeatherData) w['location_id']: w,
+        };
+
+        // Process locations with updated weather data
+        _processLocations(locations, updatedWeatherByLocation);
+      } else {
+        // No updates needed, just process with existing data
+        _processLocations(locations, weatherByLocation);
+      }
+    } catch (e) {
+      print('Error loading locations: $e');
+    } finally {
+      if (showLoadingIndicator && mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  // Update weather for a single location
+  Future<void> _updateWeatherForLocation(
+      DatabaseHelper db, Map<String, dynamic> location) async {
+    try {
       Map<String, dynamic>? weather;
 
-      // Nếu là vị trí hiện tại và có tọa độ, sử dụng tọa độ để lấy thời tiết
+      // Use coordinates for current location, city name for others
       if (location['is_current'] == 1 && currentPosition != null) {
         weather = await fetchWeatherByCoordinates(
             currentPosition!.latitude, currentPosition!.longitude);
       } else {
-        // Ngược lại sử dụng tên thành phố
         weather = await fetchWeather(location['name']);
       }
 
       if (weather != null) {
-        try {
-          weatherDataList.add({
-            'location_id': location['id'],
-            'temperature': weather['main']['temp'],
-            'feelsLike': weather['main']['feels_like'],
-            'maxTemp': weather['main']['temp_max'],
-            'minTemp': weather['main']['temp_min'],
-            'pressure': weather['main']['pressure'],
-            'humidity': weather['main']['humidity'],
-            'windSpeed': weather['wind']['speed'],
-            'windDeg': weather['wind']['deg'],
-            'windGust': weather['wind']['gust'] ?? 0.0,
-            'icon': weather['weather'][0]['icon'],
-            'timeZone': weather['timezone'],
-            'cloud': weather['clouds']['all'],
-            'visibility': weather['visibility'],
-            'sunrise': weather['sys']['sunrise'],
-            'sunset': weather['sys']['sunset'],
-            'description': weather['weather'][0]['description'],
-            'main': weather['weather'][0]['main'],
-            'updatedAt':
-                DateTime.fromMillisecondsSinceEpoch(weather['dt'] * 1000)
-                    .toIso8601String(),
-          });
-        } catch (e) {
-          print('Error processing weather data for ${location['name']}: $e');
-        }
-      } else {
-        print('Could not fetch weather for ${location['name']}');
-      }
-    }
-
-    // Save weather data to database
-    for (var weather in weatherDataList) {
-      await db.insertWeatherData(weather);
-    }
-
-    final storedWeatherData = await db.getAllWeatherData();
-    final weatherByLocation = {
-      for (var w in storedWeatherData) w['location_id']: w,
-    };
-
-    setState(() {
-      isLoading = false;
-      allLocations = locations;
-      if (locations.isNotEmpty) {
-        // Địa điểm ưa thích là vị trí hiện tại (đầu tiên sau khi sắp xếp)
-        favouriteLocations = [locations.first];
-        // Các địa điểm khác là tất cả vị trí còn lại
-        otherLocations = locations.skip(1).toList();
-      }
-
-      favouriteLocations = favouriteLocations.map((loc) {
-        return {
-          ...loc,
-          'weather': weatherByLocation[loc['id']],
+        final weatherData = {
+          'location_id': location['id'],
+          'temperature': weather['main']['temp'],
+          'feelsLike': weather['main']['feels_like'],
+          'maxTemp': weather['main']['temp_max'],
+          'minTemp': weather['main']['temp_min'],
+          'pressure': weather['main']['pressure'],
+          'humidity': weather['main']['humidity'],
+          'windSpeed': weather['wind']['speed'],
+          'windDeg': weather['wind']['deg'],
+          'windGust': weather['wind']['gust'] ?? 0.0,
+          'icon': weather['weather'][0]['icon'],
+          'timeZone': weather['timezone'],
+          'cloud': weather['clouds']['all'],
+          'visibility': weather['visibility'],
+          'sunrise': weather['sys']['sunrise'],
+          'sunset': weather['sys']['sunset'],
+          'description': weather['weather'][0]['description'],
+          'main': weather['weather'][0]['main'],
+          'updatedAt': DateTime.fromMillisecondsSinceEpoch(weather['dt'] * 1000)
+              .toIso8601String(),
         };
-      }).toList();
 
-      otherLocations = otherLocations.map((loc) {
-        return {
-          ...loc,
-          'weather': weatherByLocation[loc['id']],
-        };
-      }).toList();
-    });
+        await db.insertWeatherData(weatherData);
+      }
+    } catch (e) {
+      print('Error updating weather for ${location['name']}: $e');
+    }
   }
 
-  // Fetch weather data from OpenWeatherMap API
+  // Fetch weather with timeout
   Future<Map<String, dynamic>?> fetchWeather(String cityName) async {
     if (cityName.isEmpty || cityName.trim().isEmpty) {
-      print('Error: City name is empty or invalid');
       return null;
     }
 
     final url =
         'https://api.openweathermap.org/data/2.5/weather?q=${Uri.encodeComponent(cityName)}&appid=$apiKey&units=metric&lang=vi';
+
     try {
-      final response = await http.get(Uri.parse(url));
+      final response =
+          await http.get(Uri.parse(url)).timeout(Duration(seconds: 5));
+
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
-      } else {
-        print('Failed to fetch weather for $cityName: ${response.statusCode}');
-        return null;
       }
     } catch (e) {
       print('Error fetching weather for $cityName: $e');
-      return null;
     }
+    return null;
   }
 
-  // Fetch weather data using coordinates
+  // Fetch weather by coordinates with timeout
   Future<Map<String, dynamic>?> fetchWeatherByCoordinates(
       double lat, double lon) async {
     final url =
         'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric&lang=vi';
+
     try {
-      final response = await http.get(Uri.parse(url));
+      final response =
+          await http.get(Uri.parse(url)).timeout(Duration(seconds: 5));
+
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
-      } else {
-        print('Failed to fetch weather by coordinates: ${response.statusCode}');
-        return null;
       }
     } catch (e) {
       print('Error fetching weather by coordinates: $e');
-      return null;
     }
+    return null;
   }
 
   List<Map<String, dynamic>> filterLocations(String query) {
@@ -328,89 +427,94 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
           ),
         ],
       ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: loadLocations,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: SingleChildScrollView(
-                  physics: AlwaysScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Vị trí hiện tại',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 8),
-                      if (favouriteLocations.isEmpty)
-                        Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                          color: Colors.grey.shade200,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Center(
-                              child: Text(
-                                'Chưa có vị trí nào được thêm. Nhấn nút + để thêm vị trí.',
-                                textAlign: TextAlign.center,
-                              ),
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: () => loadLocations(showLoadingIndicator: false),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Vị trí hiện tại',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    if (favouriteLocations.isEmpty)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        color: Colors.grey.shade200,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Center(
+                            child: Text(
+                              'Chưa có vị trí nào được thêm. Nhấn nút + để thêm vị trí.',
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                        )
-                      else
-                        ...favouriteLocations.map(buildLocationCard),
-                      SizedBox(height: 16),
-                      Text(
-                        'Vị trí khác',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 8),
-                      if (otherLocations.isEmpty)
-                        Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                          color: Colors.grey.shade200,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Center(
-                              child: Text(
-                                'Không có vị trí khác.',
-                                textAlign: TextAlign.center,
-                              ),
+                        ),
+                      )
+                    else
+                      ...favouriteLocations.map(buildLocationCard),
+                    SizedBox(height: 16),
+                    Text(
+                      'Vị trí khác',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    if (otherLocations.isEmpty)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        color: Colors.grey.shade200,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Center(
+                            child: Text(
+                              'Không có vị trí khác.',
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                        )
-                      else
-                        ...otherLocations.map((location) =>
-                            buildDismissibleLocationCard(location)),
-                    ],
-                  ),
+                        ),
+                      )
+                    else
+                      ...otherLocations.map(
+                          (location) => buildDismissibleLocationCard(location)),
+                  ],
                 ),
               ),
             ),
+          ),
+          if (isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Làm mới dữ liệu thời tiết
-          loadLocations();
-        },
+        onPressed: () => loadLocations(),
         child: Icon(Icons.refresh),
         tooltip: 'Làm mới dữ liệu thời tiết',
       ),
     );
   }
 
-  // Widget này dùng cho các vị trí "khác" - có thể vuốt để xóa
+  // Widget for other locations - can be swiped to delete
   Widget buildDismissibleLocationCard(Map<String, dynamic> location) {
     return Dismissible(
       key: Key('location-${location['id']}'),
-      direction:
-          DismissDirection.endToStart, // Chỉ cho phép vuốt từ phải sang trái
+      direction: DismissDirection.endToStart, // Only allow right to left swipe
       background: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -426,7 +530,7 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
         ),
       ),
       confirmDismiss: (direction) async {
-        // Hiển thị hộp thoại xác nhận xóa
+        // Show delete confirmation dialog
         return await showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -450,25 +554,21 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
         );
       },
       onDismissed: (direction) async {
-        // Xóa vị trí khi người dùng đã xác nhận
         try {
           final db = DatabaseHelper();
           await db.deleteLocation(location['id']);
 
-          // Xóa khỏi danh sách UI
           setState(() {
             otherLocations.removeWhere((item) => item['id'] == location['id']);
             allLocations.removeWhere((item) => item['id'] == location['id']);
           });
 
-          // Hiển thị thông báo
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Đã xóa vị trí ${location['name']}'),
               action: SnackBarAction(
                 label: 'Hoàn tác',
                 onPressed: () async {
-                  // Hoàn tác xóa vị trí
                   await db.insertLocation({
                     'id': location['id'],
                     'name': location['name'],
@@ -476,7 +576,6 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                     'longitude': location['longitude'],
                     'is_current': 0,
                   });
-                  // Tải lại danh sách
                   await loadLocations();
                 },
               ),
@@ -484,7 +583,6 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
           );
         } catch (e) {
           print('Lỗi khi xóa vị trí: $e');
-          // Hiển thị thông báo lỗi
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Không thể xóa vị trí. Vui lòng thử lại.')),
           );

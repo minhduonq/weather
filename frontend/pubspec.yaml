@@ -36,6 +36,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_local_notifications: ^19.1.0
   timezone: ^0.10.1
+  connectivity_plus: ^6.1.4
+  retry: ^3.1.2
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
@@ -58,7 +61,6 @@ dev_dependencies:
   home_widget: ^0.7.0+1
   get: ^4.6.6
   get_storage: ^2.0.3
-  shared_preferences: ^2.2.2
   #workmanager: ^0.5.2
 
 # For information on the generic Dart part of this file, see the

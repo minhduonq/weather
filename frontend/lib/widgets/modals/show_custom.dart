@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/manage_location.dart';
-import 'package:frontend/screens/manage_noete.dart';
+import 'package:frontend/screens/manage_notification.dart';
 
 void showCustomModal(BuildContext context) {
   showDialog(
@@ -36,7 +36,7 @@ void showCustomModal(BuildContext context) {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ManageNote(),
+                            builder: (context) => ManageNotification(),
                           ));
                     },
                   ),

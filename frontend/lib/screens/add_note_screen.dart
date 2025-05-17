@@ -24,7 +24,7 @@
 //   String _errorMessage = '';
 //   Map<String, dynamic>? _weatherData;
 //   final String _apiKey =
-//       '2b5630205440fa5d9747bc910681e783'; // From AddLocationScreen
+//       '2b5630205440fa5d9747bc910681e783'; // TODO: Move to secure config
 
 //   @override
 //   void initState() {
@@ -38,16 +38,12 @@
 //       _errorMessage = '';
 //     });
 //     try {
-//       // Request location permission and get current position
 //       Position position = await _determinePosition();
-
-//       // Get all locations from database
 //       final locations = await widget.databaseHelper.getAllLocations();
 //       if (locations.isEmpty) {
 //         throw Exception('Không có dữ liệu vị trí trong cơ sở dữ liệu');
 //       }
 
-//       // Find closest location using Haversine formula
 //       Map<String, dynamic>? closestLocation;
 //       double minDistance = double.infinity;
 //       for (var loc in locations) {
@@ -67,7 +63,6 @@
 //         throw Exception('Không tìm thấy vị trí phù hợp');
 //       }
 
-//       // Fetch weather data from OpenWeatherMap API
 //       final weatherData = await _fetchWeather(
 //           closestLocation['latitude'], closestLocation['longitude']);
 //       if (weatherData == null) {
@@ -85,9 +80,19 @@
 //         };
 //       });
 //     } catch (e) {
+//       String errorMsg;
+//       if (e.toString().contains('Dịch vụ định vị bị tắt')) {
+//         errorMsg = 'Vui lòng bật dịch vụ định vị';
+//       } else if (e.toString().contains('Quyền định vị bị từ chối')) {
+//         errorMsg = 'Vui lòng cấp quyền định vị trong cài đặt';
+//       } else if (e.toString().contains('Không có dữ liệu vị trí')) {
+//         errorMsg = 'Chưa có vị trí nào được lưu. Vui lòng thêm vị trí';
+//       } else {
+//         errorMsg = 'Lỗi khi lấy dữ liệu thời tiết: $e';
+//       }
 //       if (mounted) {
 //         setState(() {
-//           _errorMessage = 'Lỗi khi lấy dữ liệu thời tiết: $e';
+//           _errorMessage = errorMsg;
 //         });
 //       }
 //     } finally {
@@ -119,11 +124,11 @@
 
 //   double _calculateDistance(
 //       double lat1, double lon1, double lat2, double lon2) {
-//     const double p = 0.017453292519943295; // Math.PI / 180
+//     const double p = 0.017453292519943295;
 //     final double a = 0.5 -
 //         cos((lat2 - lat1) * p) / 2 +
 //         cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
-//     return 12742 * asin(sqrt(a)); // 2 * R; R = 6371 km
+//     return 12742 * asin(sqrt(a));
 //   }
 
 //   Future<Position> _determinePosition() async {
@@ -215,13 +220,15 @@
 //           'Ngày: ${DateFormat('dd/MM/yyyy HH:mm').format(_selectedDateTime!)}';
 
 //       await NotificationService().scheduleNoteNotification(
-//         id: noteId,
+//         id: noteId, // Unique ID for note notifications
 //         title: 'Dự báo thời tiết',
 //         body: notificationBody,
 //         reminderTime: _selectedDateTime!,
+//         scheduledTime: _selectedDateTime!,
 //       );
 
 //       if (mounted) {
+//         _showSnackBar('Ghi chú và thông báo đã được lưu');
 //         Navigator.pop(context);
 //       }
 //     } catch (e) {
@@ -237,6 +244,12 @@
 //         });
 //       }
 //     }
+//   }
+
+//   void _showSnackBar(String message) {
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(content: Text(message)),
+//     );
 //   }
 
 //   @override

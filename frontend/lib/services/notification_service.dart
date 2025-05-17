@@ -37,6 +37,7 @@ class NotificationService {
     required String title,
     required String body,
     required DateTime scheduledDate,
+    required int id,
   }) async {
     final timeParts = time.split(':');
     final hour = int.parse(timeParts[0]);
@@ -74,6 +75,7 @@ class NotificationService {
     required String title,
     required String body,
     required DateTime scheduledTime,
+    required DateTime reminderTime,
   }) async {
     await _flutterLocalNotificationsPlugin.zonedSchedule(
       id,
