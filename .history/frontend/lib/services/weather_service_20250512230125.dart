@@ -41,7 +41,6 @@ class WeatherService {
   }
 
   // Fetch weather data from API
-
   static Future<void> fetchWeatherData(double lat, double lon) async {
     final uri =
         'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$API_KEY&units=${type.value}';

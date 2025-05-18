@@ -16,6 +16,7 @@ class _SettingsPageState extends State<Setting> {
   String _temperatureUnit = 'C';
   String _refreshRate = '3h';
   bool _showOutsideApp = false;
+  var isCelsius = true.obs;
 
   @override
   void initState() {
@@ -31,12 +32,7 @@ class _SettingsPageState extends State<Setting> {
       _refreshRate = prefs.getString('refresh') ?? '3h';
       _showOutsideApp = prefs.getBool('showOutsideApp') ?? false;
     });
-
-    // Cập nhật ngôn ngữ
     Get.updateLocale(Locale(_selectedLanguage));
-
-    // Đồng bộ đơn vị đo với biến toàn cục
-    type.value = _temperatureUnit == 'C' ? 'metric' : 'imperial';
   }
 
   Future<void> _saveSetting(String key, dynamic value) async {
@@ -54,7 +50,10 @@ class _SettingsPageState extends State<Setting> {
       appBar: AppBar(
         title: Text(
           'settings'.tr,
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+          ),
         ),
         backgroundColor: Colors.grey.shade300,
         elevation: 0,
@@ -75,7 +74,7 @@ class _SettingsPageState extends State<Setting> {
               onSelected: (value) {
                 setState(() {
                   _selectedLanguage = value;
-                  Get.updateLocale(Locale(value));
+                  Get.updateLocale(Locale(_selectedLanguage));
                 });
                 _saveSetting('lang', value);
               },
@@ -88,14 +87,11 @@ class _SettingsPageState extends State<Setting> {
                 PopupMenuItem(value: 'C', child: Text('celsius'.tr)),
                 PopupMenuItem(value: 'F', child: Text('fahrenheit'.tr)),
               ],
-              onSelected: (value) async {
+              onSelected: (value) {
                 setState(() {
                   _temperatureUnit = value;
-                  type.value = value == 'C' ? 'metric' : 'imperial';
                 });
-
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setString('unit', value);
+                _saveSetting('unit', value);
               },
             ),
             _buildDropdownTile(
@@ -119,9 +115,10 @@ class _SettingsPageState extends State<Setting> {
               title: Text(
                 'outside_app'.tr,
                 style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1,
+                ),
               ),
               value: _showOutsideApp,
               onChanged: (value) {
@@ -135,9 +132,10 @@ class _SettingsPageState extends State<Setting> {
               title: Text(
                 'notification'.tr,
                 style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1,
+                ),
               ),
               onTap: () {},
             ),
@@ -148,9 +146,10 @@ class _SettingsPageState extends State<Setting> {
               title: Text(
                 'rate'.tr,
                 style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1,
+                ),
               ),
               onTap: () {},
             ),
@@ -158,9 +157,10 @@ class _SettingsPageState extends State<Setting> {
               title: Text(
                 'privacy'.tr,
                 style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1,
+                ),
               ),
               onTap: () {},
             ),
@@ -168,9 +168,10 @@ class _SettingsPageState extends State<Setting> {
               title: Text(
                 'contact'.tr,
                 style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1,
+                ),
               ),
               onTap: () {},
             ),
@@ -190,11 +191,17 @@ class _SettingsPageState extends State<Setting> {
       title: trWithStyle(
         title,
         style: const TextStyle(
-            fontSize: 18, fontWeight: FontWeight.w500, letterSpacing: 1),
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 1,
+        ),
       ),
       subtitle: trWithStyle(
         subtitle,
-        style: const TextStyle(fontSize: 12, color: Colors.blue),
+        style: const TextStyle(
+          fontSize: 12,
+          color: Colors.blue,
+        ),
       ),
       trailing: PopupMenuButton<String>(
         onSelected: onSelected,
@@ -206,7 +213,9 @@ class _SettingsPageState extends State<Setting> {
 
   Widget _buildCard(List<Widget> children) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
       elevation: 2,
       child: Column(
         children: List.generate(children.length * 2 - 1, (index) {
@@ -214,7 +223,11 @@ class _SettingsPageState extends State<Setting> {
             return children[index ~/ 2];
           } else {
             return const Divider(
-                height: 1, thickness: 1, indent: 15, endIndent: 15);
+              height: 1,
+              thickness: 1,
+              indent: 15,
+              endIndent: 15,
+            );
           }
         }),
       ),

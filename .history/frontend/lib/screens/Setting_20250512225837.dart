@@ -88,14 +88,13 @@ class _SettingsPageState extends State<Setting> {
                 PopupMenuItem(value: 'C', child: Text('celsius'.tr)),
                 PopupMenuItem(value: 'F', child: Text('fahrenheit'.tr)),
               ],
-              onSelected: (value) async {
+              onSelected: (value) {
                 setState(() {
                   _temperatureUnit = value;
                   type.value = value == 'C' ? 'metric' : 'imperial';
                 });
-
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setString('unit', value);
+                _saveSetting('unit', value);
+                // Gợi ý: có thể gọi lại API nếu cần làm mới dữ liệu thời tiết
               },
             ),
             _buildDropdownTile(

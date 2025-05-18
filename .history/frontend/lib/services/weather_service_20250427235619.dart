@@ -21,8 +21,7 @@ class WeatherService {
 
     for (var item in list) {
       // Tạo khóa theo ngày từ timestamp
-      final DateTime date =
-          DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
+      final DateTime date = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
       final String dayKey = "${date.year}-${date.month}-${date.day}";
 
       if (!uniqueDays.containsKey(dayKey)) {
@@ -41,10 +40,9 @@ class WeatherService {
   }
 
   // Fetch weather data from API
-
   static Future<void> fetchWeatherData(double lat, double lon) async {
     final uri =
-        'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$API_KEY&units=${type.value}';
+        'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$API_KEY&units=$type';
     try {
       final response = await http.get(Uri.parse(uri));
       if (response.statusCode == 200) {
@@ -101,7 +99,7 @@ class WeatherService {
 
   static Future<void> fetchHourlyForecast(double lat, double lon) async {
     final hourly =
-        'https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=$lat&lon=$lon&appid=$API_KEY&cnt=24&units=${type.value}';
+        'https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=$lat&lon=$lon&appid=$API_KEY&cnt=24&units=$type';
     try {
       final response = await http.get(Uri.parse(hourly));
       if (response.statusCode == 200) {
@@ -139,7 +137,7 @@ class WeatherService {
 
   static Future<void> fetchDailyForecast(double lat, double lon) async {
     final daily =
-        'http://api.openweathermap.org/data/2.5/forecast/daily?lat=$lat&lon=$lon&cnt=7&appid=$API_KEY&units=${type.value}';
+        'http://api.openweathermap.org/data/2.5/forecast/daily?lat=$lat&lon=$lon&cnt=7&appid=$API_KEY&units=$type';
     try {
       final response = await http.get(Uri.parse(daily));
       if (response.statusCode == 200) {
@@ -187,14 +185,17 @@ class WeatherService {
 
       // Load current weather data
       final weatherDataList =
-          await dbHelper.getWeatherDataByLocationId(locationId);
+      await dbHelper.getWeatherDataByLocationId(locationId);
       if (weatherDataList.isNotEmpty) {
         final weatherData = weatherDataList.first;
         // Convert database data to format expected by UI
         currentData = {
           'id': locationId,
           'name': location['name'],
-          'coord': {'lat': location['latitude'], 'lon': location['longitude']},
+          'coord': {
+            'lat': location['latitude'],
+            'lon': location['longitude']
+          },
           'main': {
             'temp': weatherData['temperature'],
             'feels_like': weatherData['feelsLike'],
@@ -204,11 +205,7 @@ class WeatherService {
             'humidity': weatherData['humidity'],
             'sea_level': weatherData['pressure']
           },
-          'wind': {
-            'speed': weatherData['windSpeed'],
-            'deg': weatherData['windDeg'],
-            'gust': weatherData['windGust']
-          },
+          'wind': {'speed': weatherData['windSpeed'], 'deg': weatherData['windDeg'], 'gust': weatherData['windGust']},
           'clouds': {'all': weatherData['cloud']},
           'sys': {
             'sunrise': weatherData['sunrise'],
@@ -235,8 +232,7 @@ class WeatherService {
     }
   }
 
-  static Future<void> loadHourlyDataFromDatabase(
-      int locationId, Map<String, dynamic> location) async {
+  static Future<void> loadHourlyDataFromDatabase(int locationId, Map<String, dynamic> location) async {
     final dbHelper = DatabaseHelper();
     final hourlyDataList = await dbHelper.getHourlyDataByLocationId(locationId);
 
@@ -246,34 +242,30 @@ class WeatherService {
         'city': {
           'id': locationId,
           'name': location['name'],
-          'coord': {'lat': location['latitude'], 'lon': location['longitude']}
+          'coord': {
+            'lat': location['latitude'],
+            'lon': location['longitude']
+          }
         },
-        'list': hourlyDataList
-            .map((hourly) => {
-                  'dt': hourly['time'],
-                  'main': {
-                    'temp': double.parse(
-                        ((hourly['temperatureMax'] + hourly['temperatureMin']) /
-                                2)
-                            .toStringAsFixed(1)),
-                    'temp_max': double.parse(
-                        hourly['temperatureMax'].toStringAsFixed(1)),
-                    'temp_min': double.parse(
-                        hourly['temperatureMin'].toStringAsFixed(1)),
-                    'humidity': hourly['humidity']
-                  },
-                  'weather': [
-                    {'icon': hourly['icon']}
-                  ],
-                  'pop': 0.0 // Default value for precipitation probability
-                })
+        'list': hourlyDataList.map((hourly) => {
+          'dt': hourly['time'],
+          'main': {
+            'temp': double.parse(((hourly['temperatureMax'] + hourly['temperatureMin']) / 2).toStringAsFixed(1)),
+            'temp_max': double.parse(hourly['temperatureMax'].toStringAsFixed(1)),
+            'temp_min': double.parse(hourly['temperatureMin'].toStringAsFixed(1)),
+            'humidity': hourly['humidity']
+          },
+          'weather': [
+            {'icon': hourly['icon']}
+          ],
+          'pop': 0.0 // Default value for precipitation probability
+        })
             .toList()
       };
     }
   }
 
-  static Future<void> loadDailyDataFromDatabase(
-      int locationId, Map<String, dynamic> location) async {
+  static Future<void> loadDailyDataFromDatabase(int locationId, Map<String, dynamic> location) async {
     final dbHelper = DatabaseHelper();
     final dailyDataList = await dbHelper.getDailyDataByLocationId(locationId);
 
@@ -283,23 +275,24 @@ class WeatherService {
         'city': {
           'id': locationId,
           'name': location['name'],
-          'coord': {'lat': location['latitude'], 'lon': location['longitude']}
+          'coord': {
+            'lat': location['latitude'],
+            'lon': location['longitude']
+          }
         },
         'list': dailyDataList
             .map((daily) => {
-                  'dt': daily['time'],
-                  'temp': {
-                    'max': double.parse(
-                        daily['temperatureMax'].toStringAsFixed(1)),
-                    'min':
-                        double.parse(daily['temperatureMin'].toStringAsFixed(1))
-                  },
-                  'humidity': daily['humidity'],
-                  'weather': [
-                    {'icon': daily['icon']}
-                  ],
-                  'pop': 0.0
-                })
+          'dt': daily['time'],
+          'temp': {
+            'max': double.parse(daily['temperatureMax'].toStringAsFixed(1)),
+            'min': double.parse(daily['temperatureMin'].toStringAsFixed(1))
+          },
+          'humidity': daily['humidity'],
+          'weather': [
+            {'icon': daily['icon']}
+          ],
+          'pop': 0.0
+        })
             .toList()
       };
     }
@@ -329,7 +322,7 @@ class WeatherService {
 
         // Check if data is recent (less than 1 hour old)
         final weatherDataList =
-            await dbHelper.getWeatherDataByLocationId(locationId);
+        await dbHelper.getWeatherDataByLocationId(locationId);
         if (weatherDataList.isNotEmpty) {
           final updatedAt = DateTime.parse(weatherDataList.first['updatedAt']);
           final now = DateTime.now();
