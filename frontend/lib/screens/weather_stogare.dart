@@ -157,18 +157,18 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
 
         // Update location in database
         final db = DatabaseHelper();
-        final currentLocations = await db.getLocationByName(cityName);
+        // final currentLocations = await db.getLocationByName(cityName);
 
-        if (currentLocations.isEmpty) {
-          await db.insertLocation({
-            'name': cityName,
-            'latitude': position.latitude,
-            'longitude': position.longitude,
-            'is_current': 1,
-          });
-        } else {
-          await db.setCurrentLocation(currentLocations.first['id']);
-        }
+        // if (currentLocations.isEmpty) {
+        //   await db.insertLocation({
+        //     'name': cityName,
+        //     'latitude': position.latitude,
+        //     'longitude': position.longitude,
+        //     'is_current': 1,
+        //   });
+        // } else {
+        //   // await db.setCurrentLocation(currentLocations.first['id']);
+        // }
       }
     } catch (e) {
       print('Error getting current location: $e');

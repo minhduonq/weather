@@ -102,27 +102,27 @@ class _ManageNoteState extends State<ManageNotification>
 
   Future<void> _loadSettings() async {
     try {
-      final settings = await databaseHelper.getSettings();
-      setState(() {
-        notificationEnabled = settings?['notification_enabled'] == 1;
-        if (settings?['notification_time'] != null) {
-          final timeParts = settings?['notification_time'].split(':');
-          if (timeParts.length == 2) {
-            try {
-              notificationTime = TimeOfDay(
-                hour: int.parse(timeParts[0]),
-                minute: int.parse(timeParts[1]),
-              );
-            } catch (e) {
-              print('Invalid notification time format: $e');
-              notificationTime = const TimeOfDay(hour: 20, minute: 0);
-            }
-          }
-        }
-        notificationDate = settings?['notification_date'] != null
-            ? DateTime.parse(settings?['notification_date'])
-            : DateTime.now();
-      });
+      // final settings = await databaseHelper.getSettings();
+      // setState(() {
+      //   notificationEnabled = settings?['notification_enabled'] == 1;
+      //   if (settings?['notification_time'] != null) {
+      //     final timeParts = settings?['notification_time'].split(':');
+      //     if (timeParts.length == 2) {
+      //       try {
+      //         notificationTime = TimeOfDay(
+      //           hour: int.parse(timeParts[0]),
+      //           minute: int.parse(timeParts[1]),
+      //         );
+      //       } catch (e) {
+      //         print('Invalid notification time format: $e');
+      //         notificationTime = const TimeOfDay(hour: 20, minute: 0);
+      //       }
+      //     }
+      //   }
+      //   notificationDate = settings?['notification_date'] != null
+      //       ? DateTime.parse(settings?['notification_date'])
+      //       : DateTime.now();
+      // });
     } catch (e) {
       print('Error loading settings: $e');
       _showErrorSnackBar('Lỗi tải cài đặt');
@@ -160,15 +160,15 @@ class _ManageNoteState extends State<ManageNotification>
   Future<void> _updateSettings() async {
     try {
       await _ensureDatabaseSchema();
-      await databaseHelper.updateSettings({
-        'unit': 'metric',
-        'theme': 'light',
-        'language': 'vi',
-        'notification_enabled': notificationEnabled ? 1 : 0,
-        'notification_time':
-            '${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}',
-        'notification_date': notificationDate.toIso8601String(),
-      });
+      // await databaseHelper.updateSettings({
+      //   'unit': 'metric',
+      //   'theme': 'light',
+      //   'language': 'vi',
+      //   'notification_enabled': notificationEnabled ? 1 : 0,
+      //   'notification_time':
+      //       '${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}',
+      //   'notification_date': notificationDate.toIso8601String(),
+      // });
       print('Settings updated successfully');
 
       // Cancel existing notifications
