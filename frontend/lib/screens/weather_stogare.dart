@@ -28,13 +28,137 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
   // Cache control
   final Duration maxCacheAge = Duration(minutes: 30);
 
+// Thêm vào phương thức initState một kiểm tra ban đầu
   @override
   void initState() {
     super.initState();
     initializeDateFormatting('vi', null).then((_) {
+      // Kiểm tra nếu chạy trên máy ảo
+      _checkAndSetEmulatorLocation();
       // Show cached data immediately, then refresh
       _loadCachedDataAndRefresh();
     });
+  }
+
+// Phương thức kiểm tra và thiết lập vị trí cho máy ảo
+  Future<void> _checkAndSetEmulatorLocation() async {
+    try {
+      // Kiểm tra nếu là máy ảo (đơn giản kiểm tra nếu không lấy được vị trí)
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      ).timeout(Duration(seconds: 3), onTimeout: () {
+        throw Exception('Likely running on emulator');
+      });
+
+      // Nếu lấy được vị trí, không làm gì
+      print('Running on physical device with position: $position');
+      return;
+    } catch (e) {
+      print('Likely running on emulator or location not available: $e');
+      // Thiết lập vị trí mặc định cho máy ảo
+      await _setupDefaultEmulatorLocation();
+    }
+  }
+
+// Thiết lập vị trí mặc định cho máy ảo
+  Future<void> _setupDefaultEmulatorLocation() async {
+    try {
+      final db = DatabaseHelper();
+
+      // Đảm bảo bảng location có cột is_current
+      await db.resetCurrentLocation();
+
+      // Vị trí mặc định: Ho Chi Minh City
+      const String defaultCity = 'Ho Chi Minh City';
+      const double defaultLat = 10.8231;
+      const double defaultLon = 106.6297;
+
+      // Kiểm tra xem vị trí đã tồn tại chưa
+      final existingLocations = await db.getLocationByName(defaultCity);
+
+      int locationId;
+      if (existingLocations.isEmpty) {
+        // Thêm vị trí mới nếu chưa tồn tại
+        locationId = await db.insertLocation({
+          'name': defaultCity,
+          'latitude': defaultLat,
+          'longitude': defaultLon,
+          'is_current': 1,
+        });
+      } else {
+        // Cập nhật vị trí hiện tại nếu đã tồn tại
+        locationId = existingLocations.first['id'];
+        await db.setCurrentLocation(locationId);
+      }
+
+      // Kiểm tra xem đã có dữ liệu thời tiết cho vị trí này chưa
+      final existingWeather = await db.getWeatherDataByLocationId(locationId);
+
+      if (existingWeather.isEmpty) {
+        // Nếu chưa có dữ liệu thời tiết, lấy từ API
+        await _fetchWeatherForEmulator(
+            locationId, defaultLat, defaultLon, defaultCity);
+      }
+
+      // Đặt vị trí hiện tại cho ứng dụng
+      currentPosition = Position(
+        latitude: defaultLat,
+        longitude: defaultLon,
+        timestamp: DateTime.now(),
+        accuracy: 0,
+        altitude: 0,
+        heading: 0,
+        speed: 0,
+        speedAccuracy: 0,
+        altitudeAccuracy: 0,
+        headingAccuracy: 0,
+      );
+
+      currentLocationName = defaultCity;
+
+      print('Default emulator location set to: $defaultCity');
+    } catch (e) {
+      print('Error setting up default emulator location: $e');
+    }
+  }
+
+// Phương thức lấy dữ liệu thời tiết cho máy ảo
+  Future<void> _fetchWeatherForEmulator(
+      int locationId, double lat, double lon, String cityName) async {
+    try {
+      // Lấy dữ liệu thời tiết từ API
+      final weatherData = await fetchWeatherByCoordinates(lat, lon);
+
+      if (weatherData != null) {
+        // Lưu dữ liệu thời tiết vào database
+        final db = DatabaseHelper();
+        await db.insertWeatherData({
+          'location_id': locationId,
+          'temperature': weatherData['main']['temp'],
+          'feelsLike': weatherData['main']['feels_like'],
+          'maxTemp': weatherData['main']['temp_max'],
+          'minTemp': weatherData['main']['temp_min'],
+          'pressure': weatherData['main']['pressure'],
+          'humidity': weatherData['main']['humidity'],
+          'windSpeed': weatherData['wind']['speed'],
+          'windDeg': weatherData['wind']['deg'],
+          'windGust': weatherData['wind']['gust'] ?? 0.0,
+          'icon': weatherData['weather'][0]['icon'],
+          'timeZone': weatherData['timezone'],
+          'cloud': weatherData['clouds']['all'],
+          'visibility': weatherData['visibility'],
+          'sunrise': weatherData['sys']['sunrise'],
+          'sunset': weatherData['sys']['sunset'],
+          'description': weatherData['weather'][0]['description'],
+          'main': weatherData['weather'][0]['main'],
+          'updatedAt': DateTime.now().toIso8601String(),
+        });
+
+        print('Weather data fetched for emulator location: $cityName');
+      }
+    } catch (e) {
+      print('Error fetching weather for emulator: $e');
+    }
   }
 
   // Load cached data first, then refresh in background
@@ -115,7 +239,7 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
     });
   }
 
-  // Get current location with timeout
+// Sửa đổi phương thức getCurrentLocation()
   Future<void> getCurrentLocation() async {
     try {
       // Check location permission with timeout
@@ -140,38 +264,47 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
       }
 
       // Get current position with timeout
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      ).timeout(Duration(seconds: 5), onTimeout: () {
-        throw Exception('Location timeout');
-      });
+      try {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        ).timeout(Duration(seconds: 5), onTimeout: () {
+          throw Exception('Location timeout - likely running on emulator');
+        });
 
-      currentPosition = position;
+        currentPosition = position;
 
-      // Get city name from coordinates
-      final cityName = await getCityNameFromCoordinates(
-          position.latitude, position.longitude);
+        // Get city name from coordinates
+        final cityName = await getCityNameFromCoordinates(
+            position.latitude, position.longitude);
 
-      if (cityName != null && cityName.isNotEmpty) {
-        currentLocationName = cityName;
+        if (cityName != null && cityName.isNotEmpty) {
+          currentLocationName = cityName;
 
-        // Update location in database
-        final db = DatabaseHelper();
-        // final currentLocations = await db.getLocationByName(cityName);
+          // Update location in database
+          final db = DatabaseHelper();
+          final existingLocations = await db.getLocationByName(cityName);
 
-        // if (currentLocations.isEmpty) {
-        //   await db.insertLocation({
-        //     'name': cityName,
-        //     'latitude': position.latitude,
-        //     'longitude': position.longitude,
-        //     'is_current': 1,
-        //   });
-        // } else {
-        //   // await db.setCurrentLocation(currentLocations.first['id']);
-        // }
+          if (existingLocations.isEmpty) {
+            final locationId = await db.insertLocation({
+              'name': cityName,
+              'latitude': position.latitude,
+              'longitude': position.longitude,
+              'is_current': 1,
+            });
+          } else {
+            await db.setCurrentLocation(existingLocations.first['id']);
+          }
+        }
+      } catch (e) {
+        print('Error getting current position: $e');
+        // Nếu có lỗi khi lấy vị trí, có thể đang chạy trên máy ảo
+        // Kiểm tra xem đã có dữ liệu vị trí mặc định cho máy ảo chưa
+        if (currentPosition == null) {
+          await _setupDefaultEmulatorLocation();
+        }
       }
     } catch (e) {
-      print('Error getting current location: $e');
+      print('Error in getCurrentLocation: $e');
     }
   }
 
@@ -194,6 +327,7 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
     return null;
   }
 
+// Chỉnh sửa phương thức loadLocations() để sắp xếp vị trí hiện tại lên đầu
   Future<void> loadLocations({bool showLoadingIndicator = true}) async {
     if (showLoadingIndicator) {
       setState(() {
@@ -205,14 +339,18 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
       final db = DatabaseHelper();
       final dbLocations = await db.getAllLocations();
 
-      // Create a copy of the list that we can sort
+      // Tạo bản sao của danh sách để sắp xếp
       List<Map<String, dynamic>> locations =
           List<Map<String, dynamic>>.from(dbLocations);
 
-      // Make sure current location is at the top
+      // Đảm bảo vị trí hiện tại ở đầu (dựa vào cột is_current)
       locations.sort((a, b) {
-        if (a['is_current'] == 1) return -1;
-        if (b['is_current'] == 1) return 1;
+        // Nếu is_current không tồn tại, giả định nó là 0
+        final aCurrent = a['is_current'] ?? 0;
+        final bCurrent = b['is_current'] ?? 0;
+
+        if (aCurrent == 1) return -1;
+        if (bCurrent == 1) return 1;
         return 0;
       });
 
@@ -221,6 +359,31 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
       final weatherByLocation = {
         for (var w in storedWeatherData) w['location_id']: w,
       };
+
+      // Kiểm tra nếu không có vị trí nào
+      if (locations.isEmpty &&
+          currentPosition != null &&
+          currentLocationName != null) {
+        // Thêm vị trí hiện tại nếu có
+        final locationId = await db.insertLocation({
+          'name': currentLocationName!,
+          'latitude': currentPosition!.latitude,
+          'longitude': currentPosition!.longitude,
+          'is_current': 1,
+        });
+
+        // Lấy dữ liệu thời tiết cho vị trí mới
+        await _updateWeatherForLocation(db, {
+          'id': locationId,
+          'name': currentLocationName!,
+          'latitude': currentPosition!.latitude,
+          'longitude': currentPosition!.longitude,
+          'is_current': 1,
+        });
+
+        // Lấy lại danh sách vị trí
+        locations = await db.getAllLocations();
+      }
 
       // Check if we need to refresh any weather data
       List<Future<void>> updateFutures = [];
@@ -245,20 +408,20 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
         }
       }
 
-      // Update all weather data in parallel
+      // Cập nhật tất cả dữ liệu thời tiết song song
       if (updateFutures.isNotEmpty) {
         await Future.wait(updateFutures);
 
-        // Reload weather data after updates
+        // Tải lại dữ liệu thời tiết sau khi cập nhật
         final updatedWeatherData = await db.getAllWeatherData();
         final updatedWeatherByLocation = {
           for (var w in updatedWeatherData) w['location_id']: w,
         };
 
-        // Process locations with updated weather data
+        // Xử lý vị trí với dữ liệu thời tiết đã cập nhật
         _processLocations(locations, updatedWeatherByLocation);
       } else {
-        // No updates needed, just process with existing data
+        // Không cần cập nhật, chỉ xử lý với dữ liệu hiện có
         _processLocations(locations, weatherByLocation);
       }
     } catch (e) {

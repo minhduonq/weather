@@ -4,15 +4,13 @@ import 'package:frontend/services/database.dart';
 import 'package:frontend/services/notification_service.dart';
 import 'package:frontend/services/weather_service.dart';
 import 'package:frontend/services/formatting_service.dart';
-import 'dart:io' show Platform;
 
 class ManageNotification extends StatefulWidget {
   @override
   _ManageNoteState createState() => _ManageNoteState();
 }
 
-class _ManageNoteState extends State<ManageNotification>
-    with WidgetsBindingObserver {
+class _ManageNoteState extends State<ManageNotification> {
   late DatabaseHelper databaseHelper;
   bool notificationEnabled = true;
   TimeOfDay notificationTime = const TimeOfDay(hour: 20, minute: 0);
@@ -23,7 +21,6 @@ class _ManageNoteState extends State<ManageNotification>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _initializeApp();
   }
 
@@ -31,7 +28,6 @@ class _ManageNoteState extends State<ManageNotification>
     try {
       databaseHelper = DatabaseHelper();
       await NotificationService().init();
-      await _loadSettings();
       await _loadSavedLocations();
       await _ensureDatabaseSchema();
       await NotificationService().requestNotificationPermissions();
@@ -40,35 +36,16 @@ class _ManageNoteState extends State<ManageNotification>
         _isInitialized = true;
       });
 
-      // Schedule notification on app start if enabled
       if (notificationEnabled) {
         await _scheduleWeatherNotification();
       }
     } catch (e) {
       print('Error initializing app: $e');
       setState(() {
-        _isInitialized = true; // Set to true even on error to show UI
+        _isInitialized = true;
       });
       _showErrorSnackBar('Lỗi khởi tạo ứng dụng: $e');
     }
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // Refetch settings and reschedule notifications when app resumes
-      _loadSettings().then((_) {
-        if (notificationEnabled) {
-          _scheduleWeatherNotification();
-        }
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
   }
 
   Future<void> _ensureDatabaseSchema() async {
@@ -93,39 +70,10 @@ class _ManageNoteState extends State<ManageNotification>
       }
 
       final schema = await db.rawQuery('PRAGMA table_info(setting)');
-      print('Setting table schema: $schema');
+      print('Current setting table schema: $schema');
     } catch (e) {
       print('Error updating database schema: $e');
       _showErrorSnackBar('Lỗi cập nhật cấu trúc dữ liệu');
-    }
-  }
-
-  Future<void> _loadSettings() async {
-    try {
-      // final settings = await databaseHelper.getSettings();
-      // setState(() {
-      //   notificationEnabled = settings?['notification_enabled'] == 1;
-      //   if (settings?['notification_time'] != null) {
-      //     final timeParts = settings?['notification_time'].split(':');
-      //     if (timeParts.length == 2) {
-      //       try {
-      //         notificationTime = TimeOfDay(
-      //           hour: int.parse(timeParts[0]),
-      //           minute: int.parse(timeParts[1]),
-      //         );
-      //       } catch (e) {
-      //         print('Invalid notification time format: $e');
-      //         notificationTime = const TimeOfDay(hour: 20, minute: 0);
-      //       }
-      //     }
-      //   }
-      //   notificationDate = settings?['notification_date'] != null
-      //       ? DateTime.parse(settings?['notification_date'])
-      //       : DateTime.now();
-      // });
-    } catch (e) {
-      print('Error loading settings: $e');
-      _showErrorSnackBar('Lỗi tải cài đặt');
     }
   }
 
@@ -171,9 +119,7 @@ class _ManageNoteState extends State<ManageNotification>
       // });
       print('Settings updated successfully');
 
-      // Cancel existing notifications
       await NotificationService().cancelAllNotifications();
-
       if (notificationEnabled) {
         await _scheduleWeatherNotification();
         print(
@@ -196,7 +142,8 @@ class _ManageNoteState extends State<ManageNotification>
       if (dailyData.isEmpty ||
           dailyData['list'] == null ||
           dailyData['list'].length < 2) {
-        print('Insufficient weather data');
+        print(
+            'Insufficient weather data for coordinates: ($latitude, $longitude)');
         return null;
       }
 
@@ -210,7 +157,7 @@ class _ManageNoteState extends State<ManageNotification>
           return data;
         }
       }
-      print('No data found for tomorrow: $tomorrow');
+      print('No weather data found for tomorrow: $tomorrow');
       return null;
     } catch (e) {
       print('Error fetching weather data: $e');
@@ -259,7 +206,7 @@ Dự báo thời tiết tại $cityName ngày $dateString:
   Future<void> _scheduleWeatherNotification() async {
     try {
       if (_locations.isEmpty) {
-        print('No valid locations available');
+        print('No valid locations available for notification');
         _showErrorSnackBar('Không có vị trí cho thông báo thời tiết');
         return;
       }
@@ -278,9 +225,7 @@ Dự báo thời tiết tại $cityName ngày $dateString:
         return;
       }
 
-      // Cancel any existing notifications first
       await NotificationService().cancelAllNotifications();
-
       final tomorrowData = await _fetchTomorrowWeather(latitude, longitude);
       if (tomorrowData == null) {
         _showErrorSnackBar('Không thể lấy dữ liệu thời tiết ngày mai');
@@ -304,7 +249,6 @@ Dự báo thời tiết tại $cityName ngày $dateString:
           ? scheduledTime.add(Duration(days: 1))
           : scheduledTime;
 
-      // Schedule the actual daily notification
       await NotificationService().scheduleDailyWeatherNotification(
         id: 0,
         time:
@@ -370,7 +314,6 @@ Dự báo thời tiết tại $cityName ngày $dateString:
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: () async {
-              await _loadSettings();
               await _loadSavedLocations();
               if (notificationEnabled) {
                 await _scheduleWeatherNotification();
@@ -388,7 +331,6 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
                   children: [
-                    // Phần cài đặt thông báo
                     Card(
                       margin: EdgeInsets.all(10),
                       elevation: 4,
@@ -429,7 +371,6 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                                 await _updateSettings();
                               },
                             ),
-                            // Widget chọn giờ thông báo
                             ListTile(
                               title: Text('Thời gian thông báo'),
                               subtitle: Text(
@@ -446,7 +387,6 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                               enabled: notificationEnabled,
                               onTap: () async {
                                 if (!notificationEnabled) return;
-
                                 final TimeOfDay? picked = await showTimePicker(
                                   context: context,
                                   initialTime: notificationTime,
@@ -454,13 +394,11 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                                       (BuildContext context, Widget? child) {
                                     return MediaQuery(
                                       data: MediaQuery.of(context).copyWith(
-                                        alwaysUse24HourFormat: true,
-                                      ),
+                                          alwaysUse24HourFormat: true),
                                       child: child!,
                                     );
                                   },
                                 );
-
                                 if (picked != null &&
                                     picked != notificationTime) {
                                   setState(() {
@@ -470,7 +408,6 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                                 }
                               },
                             ),
-                            // Hiển thị vị trí hiện tại
                             if (_locations.isNotEmpty) ...[
                               Divider(),
                               ListTile(
@@ -486,8 +423,6 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                         ),
                       ),
                     ),
-
-                    // Thẻ mô tả thông báo
                     Card(
                       margin: EdgeInsets.all(10),
                       elevation: 2,
@@ -515,132 +450,6 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                               'Thông báo sẽ cung cấp thông tin về nhiệt độ, độ ẩm, áp suất, thời tiết, và '
                               'xác suất mưa cho ngày hôm sau.',
                               style: TextStyle(fontSize: 14),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Thẻ kiểm tra thông báo
-                    Card(
-                      margin: EdgeInsets.all(10),
-                      elevation: 3,
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.notification_important,
-                                    color: Theme.of(context).primaryColor),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Kiểm tra thông báo',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 12),
-                            Text(
-                              'Nếu bạn không nhận được thông báo, hãy kiểm tra xem thông báo đã được bật trong '
-                              'cài đặt của điện thoại chưa. Bạn cũng có thể kiểm tra thông báo bằng cách nhấn nút bên dưới.',
-                              style: TextStyle(fontSize: 14),
-                            ),
-                            SizedBox(height: 16),
-                            Center(
-                              child: ElevatedButton.icon(
-                                icon: Icon(Icons.send),
-                                label: Text('Gửi thông báo thử nghiệm'),
-                                style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 12),
-                                ),
-                                onPressed: () async {
-                                  try {
-                                    // Lên lịch thông báo với thời gian cụ thể trong tương lai gần
-                                    final now = DateTime.now();
-                                    final testDate =
-                                        now.add(Duration(minutes: 1));
-
-                                    await NotificationService()
-                                        .scheduleDailyWeatherNotification(
-                                      id: 100,
-                                      time: '${now.hour}:${now.minute}',
-                                      title: 'Thử nghiệm thông báo',
-                                      body:
-                                          'Đây là thông báo thử nghiệm. Nếu bạn nhìn thấy nó, hệ thống thông báo đang hoạt động bình thường.',
-                                      scheduledDate: testDate,
-                                    );
-
-                                    _showSnackBar(
-                                        'Đã lên lịch thông báo thử nghiệm, sẽ hiển thị sau 1 phút');
-                                  } catch (e) {
-                                    _showErrorSnackBar(
-                                        'Lỗi khi gửi thông báo: $e');
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Thẻ khắc phục sự cố
-                    Card(
-                      margin: EdgeInsets.all(10),
-                      elevation: 2,
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.help_outline,
-                                    color: Theme.of(context).primaryColor),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Khắc phục sự cố',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 12),
-                            Text(
-                              'Nếu thông báo không hoạt động:',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                                '1. Đảm bảo đã bật thông báo trong cài đặt ứng dụng'),
-                            Text(
-                                '2. Kiểm tra cài đặt thông báo trong điện thoại'),
-                            Text('3. Thử khởi động lại ứng dụng'),
-                            Text('4. Nhấn nút làm mới ở góc trên bên phải'),
-                            SizedBox(height: 16),
-                            Center(
-                              child: ElevatedButton.icon(
-                                icon: Icon(Icons.refresh),
-                                label: Text('Khởi tạo lại thông báo'),
-                                style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 12),
-                                ),
-                                onPressed: () async {
-                                  await NotificationService()
-                                      .cancelAllNotifications();
-                                  if (notificationEnabled) {
-                                    await _scheduleWeatherNotification();
-                                  }
-                                  _showSnackBar('Đã khởi tạo lại thông báo');
-                                },
-                              ),
                             ),
                           ],
                         ),
