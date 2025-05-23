@@ -101,4 +101,28 @@ class NotificationService {
     await _flutterLocalNotificationsPlugin.cancelAll();
     print('All notifications cancelled');
   }
+
+  Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'immediate_channel',
+      'Immediate Notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const NotificationDetails notificationDetails =
+        NotificationDetails(android: androidDetails);
+
+    await _flutterLocalNotificationsPlugin.show(
+      id,
+      title,
+      body,
+      notificationDetails,
+    );
+  }
 }

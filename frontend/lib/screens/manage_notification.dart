@@ -4,6 +4,8 @@ import 'package:frontend/services/database.dart';
 import 'package:frontend/services/notification_service.dart';
 import 'package:frontend/services/weather_service.dart';
 import 'package:frontend/services/formatting_service.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ManageNotification extends StatefulWidget {
   @override
@@ -205,62 +207,70 @@ Dự báo thời tiết tại $cityName ngày $dateString:
 
   Future<void> _scheduleWeatherNotification() async {
     try {
-      if (_locations.isEmpty) {
-        print('No valid locations available for notification');
-        _showErrorSnackBar('Không có vị trí cho thông báo thời tiết');
-        return;
-      }
-
-      final location = _locations.firstWhere(
-        (loc) => loc['isCurrent'] == true,
-        orElse: () => _locations.first,
-      );
-      print('Selected location for notification: ${location['name']}');
-
-      final latitude = location['latitude'] as double?;
-      final longitude = location['longitude'] as double?;
-      if (latitude == null || longitude == null) {
-        print('Invalid coordinates for ${location['name']}');
-        _showErrorSnackBar('Tọa độ vị trí không hợp lệ');
-        return;
-      }
+      final double latitude = 10.762622; // Mặc định vĩ độ
+      final double longitude = 106.660172; // Mặc định kinh độ
+      final String cityName = 'Ho Chi Minh City';
 
       await NotificationService().cancelAllNotifications();
+
       final tomorrowData = await _fetchTomorrowWeather(latitude, longitude);
       if (tomorrowData == null) {
         _showErrorSnackBar('Không thể lấy dữ liệu thời tiết ngày mai');
         return;
       }
 
-      final cityName = location['name'] as String;
       final timezone = WeatherService.dailyData['timezone'] as int? ?? 0;
       final notificationBody =
           _formatWeatherNotification(tomorrowData, cityName, timezone);
 
-      final now = DateTime.now();
-      final scheduledTime = DateTime(
-        notificationDate.year,
-        notificationDate.month,
-        notificationDate.day,
-        notificationTime.hour,
-        notificationTime.minute,
-      );
-      final finalScheduledDate = scheduledTime.isBefore(now)
-          ? scheduledTime.add(Duration(days: 1))
-          : scheduledTime;
+      // Kiểm tra có phải đang chạy trên emulator không
+      bool isEmulator = false;
 
-      await NotificationService().scheduleDailyWeatherNotification(
-        id: 0,
-        time:
-            '${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}',
-        title: 'Dự báo thời tiết ngày mai',
-        body: notificationBody,
-        scheduledDate: finalScheduledDate,
-      );
+      // Cách đơn giản phát hiện emulator:
+      // Bạn có thể dùng package device_info hoặc tự check platform/environment variables.
+      // Ở đây là ví dụ giả lập, bạn có thể chỉnh lại:
+      if (!kIsWeb && Platform.isAndroid) {
+        // Ví dụ check device model hoặc manufacturer có chứa "Emulator", "sdk" ...
+        // Mình bỏ qua chi tiết, bạn có thể thêm kiểm tra này nếu muốn.
+        isEmulator = false; // Thay true nếu muốn test emulator
+      }
 
-      print('Notification scheduled for $finalScheduledDate');
-      _showSnackBar(
-          'Đã lên lịch thông báo thời tiết cho ${formatTimeDisplay(notificationTime)}');
+      if (isEmulator) {
+        // Nếu đang chạy emulator, hiển thị notification ngay
+        await NotificationService().showNotification(
+          id: 0,
+          title: 'Dự báo thời tiết ngày mai',
+          body: notificationBody,
+        );
+        _showSnackBar('Đã gửi thông báo thời tiết ngay trên Emulator');
+        print('Notification shown immediately on Emulator');
+      } else {
+        // Trên thiết bị thật, lên lịch thông báo theo thời gian đã chọn
+        final now = DateTime.now();
+        final scheduledTime = DateTime(
+          notificationDate.year,
+          notificationDate.month,
+          notificationDate.day,
+          notificationTime.hour,
+          notificationTime.minute,
+        );
+        final finalScheduledDate = scheduledTime.isBefore(now)
+            ? scheduledTime.add(Duration(days: 1))
+            : scheduledTime;
+
+        await NotificationService().scheduleDailyWeatherNotification(
+          id: 0,
+          time:
+              '${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}',
+          title: 'Dự báo thời tiết ngày mai',
+          body: notificationBody,
+          scheduledDate: finalScheduledDate,
+        );
+
+        _showSnackBar(
+            'Đã lên lịch thông báo thời tiết cho ${formatTimeDisplay(notificationTime)}');
+        print('Notification scheduled for $finalScheduledDate');
+      }
     } catch (e) {
       print('Error scheduling notification: $e');
       _showErrorSnackBar('Lỗi khi lên lịch thông báo: $e');
