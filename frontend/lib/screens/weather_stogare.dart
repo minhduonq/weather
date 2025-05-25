@@ -325,31 +325,31 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                   showCustomModal(context);
                 },
               ),
-              IconButton(
-                icon: Icon(Icons.search, color: Colors.black),
-                onPressed: () async {
-                  final selectedLocation =
-                      await showSearch<Map<String, dynamic>>(
-                    context: context,
-                    delegate: LocationSearchDelegate(
-                      locations: locations,
-                      onSearch: (query) {
-                        // No need for setState as Consumer will rebuild
-                      },
-                    ),
-                  );
-                  if (selectedLocation != null) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => HomePage(
-                          highlightLocationName: selectedLocation['name'],
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
+              //   IconButton(
+              //     icon: Icon(Icons.search, color: Colors.black),
+              //     onPressed: () async {
+              //       final selectedLocation =
+              //           await showSearch<Map<String, dynamic>>(
+              //         context: context,
+              //         delegate: LocationSearchDelegate(
+              //           locations: locations,
+              //           onSearch: (query) {
+              //             // No need for setState as Consumer will rebuild
+              //           },
+              //         ),
+              //       );
+              //       if (selectedLocation != null) {
+              //         Navigator.pushReplacement(
+              //           context,
+              //           MaterialPageRoute(
+              //             builder: (context) => HomePage(
+              //               highlightLocationName: selectedLocation['name'],
+              //             ),
+              //           ),
+              //         );
+              //       }
+              //     },
+              //   ),
             ],
           ),
           body: Container(
