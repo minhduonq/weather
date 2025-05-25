@@ -42,7 +42,7 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
               position,
               await getCityNameFromCoordinates(
                       position.latitude, position.longitude) ??
-                  'Unknown');
+                  'Ho Chi Minh City');
     } catch (e) {
       print('Likely running on emulator or location not available: $e');
       await _setupDefaultEmulatorLocation();
@@ -332,7 +332,7 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                       await showSearch<Map<String, dynamic>>(
                     context: context,
                     delegate: LocationSearchDelegate(
-                      locations: locations, // Use filtered locations
+                      locations: locations,
                       onSearch: (query) {
                         // No need for setState as Consumer will rebuild
                       },
@@ -646,119 +646,130 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
     final cardColor =
         isCurrentLocation ? Colors.blue.shade400 : Colors.grey.shade300;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: cardColor, // Apply the distinct background color
-      elevation: isCurrentLocation
-          ? 6
-          : 3, // Slightly higher elevation for current location
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        isCurrentLocation
-                            ? Icons.my_location
-                            : Icons.location_on,
-                        size: 16,
-                        color: isCurrentLocation ? Colors.white : Colors.amber,
-                      ),
-                      SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          location['name']?.toString() ?? 'Unknown',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isCurrentLocation
-                                ? Colors.white
-                                : Colors.black87,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    location['name']?.toString() ??
-                        'Unknown', // Removed ", Vietnam"
-                    style: TextStyle(
-                      color: isCurrentLocation
-                          ? Colors.white70
-                          : Colors.grey.shade700,
-                      fontSize: 12,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    formattedDate,
-                    style: TextStyle(
-                      color: isCurrentLocation
-                          ? Colors.white70
-                          : Colors.grey.shade700,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomePage(
+              highlightLocationName: location['name'],
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.network(
-                  'https://openweathermap.org/img/wn/$icon@2x.png',
-                  width: 40,
-                  height: 40,
-                  errorBuilder: (_, __, ___) => Icon(
-                    Icons.cloud,
-                    color:
-                        isCurrentLocation ? Colors.white : Colors.grey.shade700,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Column(
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: cardColor,
+        elevation: isCurrentLocation ? 6 : 3,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '$temp°',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color:
-                            isCurrentLocation ? Colors.white : Colors.black87,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          isCurrentLocation
+                              ? Icons.my_location
+                              : Icons.location_on,
+                          size: 16,
+                          color:
+                              isCurrentLocation ? Colors.white : Colors.amber,
+                        ),
+                        SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            location['name'].toString(),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: isCurrentLocation
+                                  ? Colors.white
+                                  : Colors.black87,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
-                      '$tempHigh°/$tempLow°',
+                      location['name'].toString(),
                       style: TextStyle(
-                        fontSize: 14,
                         color: isCurrentLocation
                             ? Colors.white70
                             : Colors.grey.shade700,
-                      ),
-                    ),
-                    Text(
-                      'Độ ẩm: $humidity%',
-                      style: TextStyle(
                         fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      formattedDate,
+                      style: TextStyle(
                         color: isCurrentLocation
                             ? Colors.white70
                             : Colors.grey.shade700,
+                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.network(
+                    'https://openweathermap.org/img/wn/$icon@2x.png',
+                    width: 40,
+                    height: 40,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.cloud,
+                      color: isCurrentLocation
+                          ? Colors.white
+                          : Colors.grey.shade700,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$temp°',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              isCurrentLocation ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        '$tempHigh°/$tempLow°',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isCurrentLocation
+                              ? Colors.white70
+                              : Colors.grey.shade700,
+                        ),
+                      ),
+                      Text(
+                        'Độ ẩm: $humidity%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isCurrentLocation
+                              ? Colors.white70
+                              : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -814,12 +825,10 @@ class LocationSearchDelegate extends SearchDelegate<Map<String, dynamic>> {
       itemBuilder: (context, index) {
         final location = queryResults[index];
         return ListTile(
-          title: Text(location['name']?.toString() ?? 'Unknown'),
-          subtitle:
-              Text('${location['name']?.toString() ?? 'Unknown'}, Vietnam'),
+          title: Text(location['name'].toString()),
           onTap: () {
             onSearch(query);
-            close(context, location); // Trả về địa điểm được chọn
+            close(context, location);
           },
         );
       },
@@ -838,12 +847,10 @@ class LocationSearchDelegate extends SearchDelegate<Map<String, dynamic>> {
       itemBuilder: (context, index) {
         final location = queryResults[index];
         return ListTile(
-          title: Text(location['name']?.toString() ?? 'Unknown'),
-          subtitle:
-              Text('${location['name']?.toString() ?? 'Unknown'}, Vietnam'),
+          title: Text(location['name'].toString()),
           onTap: () {
             onSearch(query);
-            close(context, location); // Trả về địa điểm được chọn
+            close(context, location);
           },
         );
       },
