@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/screens/manage_location.dart';
 import 'package:frontend/screens/manage_notification.dart';
 
 void showCustomModal(BuildContext context) {

@@ -39,6 +39,8 @@ dependencies:
   connectivity_plus: ^6.1.4
   retry: ^3.1.2
   shared_preferences: ^2.5.3
+  provider: ^6.1.5
+  speech_to_text: ^7.0.0
 
 dev_dependencies:
   flutter_test:

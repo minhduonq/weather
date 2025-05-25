@@ -4,6 +4,9 @@ import 'package:frontend/services/database.dart';
 import 'package:frontend/services/notification_service.dart';
 import 'package:frontend/services/weather_service.dart';
 import 'package:frontend/services/formatting_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -15,10 +18,14 @@ class ManageNotification extends StatefulWidget {
 class _ManageNoteState extends State<ManageNotification> {
   late DatabaseHelper databaseHelper;
   bool notificationEnabled = true;
-  TimeOfDay notificationTime = const TimeOfDay(hour: 20, minute: 0);
+  TimeOfDay? notificationTime;
   DateTime notificationDate = DateTime.now();
-  List<Map<String, dynamic>> _locations = [];
   bool _isInitialized = false;
+  Position? currentPosition;
+  String? currentLocationName;
+
+  // API key for weather data
+  final String apiKey = '2b5630205440fa5d9747bc910681e783';
 
   @override
   void initState() {
@@ -30,8 +37,9 @@ class _ManageNoteState extends State<ManageNotification> {
     try {
       databaseHelper = DatabaseHelper();
       await NotificationService().init();
-      await _loadSavedLocations();
       await _ensureDatabaseSchema();
+      await _loadSettings();
+      await _getCurrentLocation();
       await NotificationService().requestNotificationPermissions();
 
       setState(() {
@@ -53,14 +61,26 @@ class _ManageNoteState extends State<ManageNotification> {
   Future<void> _ensureDatabaseSchema() async {
     try {
       final db = await databaseHelper.database;
-      final columns = await db.rawQuery('PRAGMA table_info(setting)');
 
+      // Lấy thông tin về bảng setting hiện tại
+      final columns = await db.rawQuery('PRAGMA table_info(setting)');
+      print('Current setting table schema: $columns');
+
+      // Kiểm tra và thêm các cột cần thiết
       bool hasNotificationTime =
           columns.any((col) => col['name'] == 'notification_time');
       if (!hasNotificationTime) {
         await db.execute(
             'ALTER TABLE setting ADD COLUMN notification_time TEXT DEFAULT "20:00"');
         print('Added notification_time column to setting table');
+      }
+
+      bool hasNotificationEnabled =
+          columns.any((col) => col['name'] == 'notification_enabled');
+      if (!hasNotificationEnabled) {
+        await db.execute(
+            'ALTER TABLE setting ADD COLUMN notification_enabled INTEGER DEFAULT 1');
+        print('Added notification_enabled column to setting table');
       }
 
       bool hasNotificationDate =
@@ -70,62 +90,203 @@ class _ManageNoteState extends State<ManageNotification> {
             .execute('ALTER TABLE setting ADD COLUMN notification_date TEXT');
         print('Added notification_date column to setting table');
       }
-
-      final schema = await db.rawQuery('PRAGMA table_info(setting)');
-      print('Current setting table schema: $schema');
     } catch (e) {
       print('Error updating database schema: $e');
       _showErrorSnackBar('Lỗi cập nhật cấu trúc dữ liệu');
     }
   }
 
-  Future<void> _loadSavedLocations() async {
+  Future<void> _loadSettings() async {
     try {
-      _locations = [];
-      final savedLocations = await databaseHelper.getAllLocations();
-      for (var location in savedLocations) {
-        if (location['name']?.isNotEmpty == true &&
-            location['latitude'] != null &&
-            location['longitude'] != null) {
-          _locations.add({
-            'id': location['id'],
-            'name': location['name'],
-            'latitude': location['latitude'],
-            'longitude': location['longitude'],
-            'isCurrent': location['name'] == InitialName,
-          });
+      final db = await databaseHelper.database;
+      final settings = await db.query('setting', limit: 1);
+
+      if (settings.isNotEmpty) {
+        final setting = settings.first;
+
+        // Load notification enabled
+        final enabledValue = setting['notification_enabled'];
+        if (enabledValue != null) {
+          notificationEnabled = enabledValue == 1;
+        }
+
+        // Load notification time
+        final savedTime = setting['notification_time'] as String?;
+        if (savedTime != null && savedTime.contains(':')) {
+          try {
+            final parts = savedTime.split(':');
+            final hour = int.parse(parts[0]);
+            final minute = int.parse(parts[1]);
+            if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60) {
+              notificationTime = TimeOfDay(hour: hour, minute: minute);
+            }
+          } catch (e) {
+            print('Error parsing saved time: $e');
+          }
         }
       }
-      print('Loaded valid locations: $_locations');
-      if (_locations.isEmpty) {
-        _showErrorSnackBar('Không tìm thấy vị trí. Vui lòng thêm vị trí.');
+
+      // Set default values if not found
+      if (notificationTime == null) {
+        notificationTime = TimeOfDay(hour: 20, minute: 0);
       }
-      setState(() {});
+
+      print(
+          'Loaded notification time: ${formatTimeDisplay(notificationTime!)}');
+      print('Loaded notification enabled: $notificationEnabled');
     } catch (e) {
-      print('Error loading locations: $e');
-      _showErrorSnackBar('Lỗi tải vị trí');
+      print('Error loading settings: $e');
+      // Set default values
+      notificationTime = TimeOfDay(hour: 20, minute: 0);
+      notificationEnabled = true;
+      _showErrorSnackBar('Lỗi tải cài đặt, sử dụng giá trị mặc định');
     }
+  }
+
+  Future<void> _saveSettings() async {
+    try {
+      final db = await databaseHelper.database;
+      final timeString = notificationTime != null
+          ? '${notificationTime!.hour}:${notificationTime!.minute.toString().padLeft(2, '0')}'
+          : '20:00';
+
+      // Kiểm tra xem có bản ghi nào trong bảng setting không
+      final existingSettings = await db.query('setting', limit: 1);
+
+      if (existingSettings.isEmpty) {
+        // Nếu không có bản ghi, thực hiện insert với tất cả các cột bắt buộc
+        await db.insert('setting', {
+          'unit': 'metric', // Cột bắt buộc
+          'theme': 'light', // Cột bắt buộc
+          'language': 'vi', // Cột bắt buộc
+          'notification_enabled': notificationEnabled ? 1 : 0, // Cột bắt buộc
+          'notification_time': timeString,
+          'notification_date': notificationDate.toIso8601String(),
+        });
+        print(
+            'Settings inserted: notification_time=$timeString, enabled=$notificationEnabled');
+      } else {
+        // Nếu có bản ghi, update bằng cách xóa và insert lại
+        // hoặc update tất cả cột để tránh lỗi NOT NULL
+        await db.delete('setting'); // Xóa tất cả record cũ
+        await db.insert('setting', {
+          'unit': 'metric', // Cột bắt buộc
+          'theme': 'light', // Cột bắt buộc
+          'language': 'vi', // Cột bắt buộc
+          'notification_enabled': notificationEnabled ? 1 : 0, // Cột bắt buộc
+          'notification_time': timeString,
+          'notification_date': notificationDate.toIso8601String(),
+        });
+        print(
+            'Settings updated (delete+insert): notification_time=$timeString, enabled=$notificationEnabled');
+      }
+    } catch (e) {
+      print('Error saving settings: $e');
+      _showErrorSnackBar('Lỗi khi lưu cài đặt thời gian: $e');
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission()
+          .timeout(Duration(seconds: 3),
+              onTimeout: () => LocationPermission.denied);
+
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission().timeout(
+            Duration(seconds: 5),
+            onTimeout: () => LocationPermission.denied);
+
+        if (permission == LocationPermission.denied) {
+          print('Location permissions are denied');
+          await _setupDefaultLocation();
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        print('Location permissions are permanently denied');
+        await _setupDefaultLocation();
+        return;
+      }
+
+      try {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        ).timeout(Duration(seconds: 5), onTimeout: () {
+          throw Exception('Location timeout');
+        });
+
+        currentPosition = position;
+        currentLocationName = await getCityNameFromCoordinates(
+                position.latitude, position.longitude) ??
+            'Vị trí hiện tại';
+      } catch (e) {
+        print('Error getting current position: $e');
+        await _setupDefaultLocation();
+      }
+    } catch (e) {
+      print('Error in getCurrentLocation: $e');
+      await _setupDefaultLocation();
+    }
+  }
+
+  Future<void> _setupDefaultLocation() async {
+    try {
+      const String defaultCity = 'Ho Chi Minh City';
+      const double defaultLat = 10.8231;
+      const double defaultLon = 106.6297;
+
+      currentPosition = Position(
+        latitude: defaultLat,
+        longitude: defaultLon,
+        timestamp: DateTime.now(),
+        accuracy: 0,
+        altitude: 0,
+        heading: 0,
+        speed: 0,
+        speedAccuracy: 0,
+        altitudeAccuracy: 0,
+        headingAccuracy: 0,
+      );
+      currentLocationName = defaultCity;
+      print('Default location set to: $defaultCity');
+    } catch (e) {
+      print('Error setting up default location: $e');
+    }
+  }
+
+  Future<String?> getCityNameFromCoordinates(double lat, double lon) async {
+    try {
+      final url =
+          'https://api.openweathermap.org/geo/1.0/reverse?lat=$lat&lon=$lon&limit=1&appid=$apiKey';
+      final response =
+          await http.get(Uri.parse(url)).timeout(Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (data.isNotEmpty) {
+          return data[0]['name'];
+        }
+      } else {
+        print('Geocoding API error: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error getting city name: $e');
+    }
+    return null;
   }
 
   Future<void> _updateSettings() async {
     try {
-      await _ensureDatabaseSchema();
-      // await databaseHelper.updateSettings({
-      //   'unit': 'metric',
-      //   'theme': 'light',
-      //   'language': 'vi',
-      //   'notification_enabled': notificationEnabled ? 1 : 0,
-      //   'notification_time':
-      //       '${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}',
-      //   'notification_date': notificationDate.toIso8601String(),
-      // });
-      print('Settings updated successfully');
-
+      await _saveSettings();
       await NotificationService().cancelAllNotifications();
+
       if (notificationEnabled) {
         await _scheduleWeatherNotification();
         print(
-            'Weather notification scheduled for ${formatTimeDisplay(notificationTime)}');
+            'Weather notification scheduled for ${formatTimeDisplay(notificationTime!)}');
+        _showSnackBar(
+            'Đã lên lịch thông báo cho ${formatTimeDisplay(notificationTime!)}');
       } else {
         print('All notifications cancelled');
         _showSnackBar('Đã tắt thông báo thời tiết');
@@ -136,42 +297,145 @@ class _ManageNoteState extends State<ManageNotification> {
     }
   }
 
-  Future<Map<String, dynamic>?> _fetchTomorrowWeather(
-      double latitude, double longitude) async {
+  Future<Map<String, dynamic>?> _fetchCurrentWeather() async {
     try {
-      await WeatherService.loadWeatherData(latitude, longitude);
-      final dailyData = WeatherService.dailyData;
-      if (dailyData.isEmpty ||
-          dailyData['list'] == null ||
-          dailyData['list'].length < 2) {
-        print(
-            'Insufficient weather data for coordinates: ($latitude, $longitude)');
+      if (currentPosition == null) {
+        await _getCurrentLocation();
+      }
+
+      if (currentPosition == null) {
+        print('No current position available');
         return null;
       }
 
-      final now = DateTime.now();
-      final tomorrow = DateTime(now.year, now.month, now.day + 1);
-      for (var data in dailyData['list']) {
-        final dataDate = DateTime.fromMillisecondsSinceEpoch(data['dt'] * 1000);
-        if (dataDate.day == tomorrow.day &&
-            dataDate.month == tomorrow.month &&
-            dataDate.year == tomorrow.year) {
-          return data;
-        }
+      final url =
+          'https://api.openweathermap.org/data/2.5/weather?lat=${currentPosition!.latitude}&lon=${currentPosition!.longitude}&appid=$apiKey&units=metric&lang=vi';
+
+      final response =
+          await http.get(Uri.parse(url)).timeout(Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        print('Weather API error: ${response.statusCode}');
+        return null;
       }
-      print('No weather data found for tomorrow: $tomorrow');
-      return null;
     } catch (e) {
-      print('Error fetching weather data: $e');
+      print('Error fetching current weather: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> _fetchTomorrowWeather() async {
+    try {
+      if (currentPosition == null) {
+        await _getCurrentLocation();
+      }
+
+      if (currentPosition == null) {
+        print('No current position available');
+        return null;
+      }
+
+      final url =
+          'https://api.openweathermap.org/data/2.5/forecast?lat=${currentPosition!.latitude}&lon=${currentPosition!.longitude}&appid=$apiKey&units=metric&lang=vi';
+
+      final response =
+          await http.get(Uri.parse(url)).timeout(Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> list = data['list'] ?? [];
+
+        if (list.isEmpty) {
+          print('No forecast data available');
+          return null;
+        }
+
+        final now = DateTime.now();
+        final tomorrow = DateTime(now.year, now.month, now.day + 1);
+
+        final tomorrowForecasts = list.where((item) {
+          final itemDateTime =
+              DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
+          return itemDateTime.day == tomorrow.day &&
+              itemDateTime.month == tomorrow.month &&
+              itemDateTime.year == tomorrow.year;
+        }).toList();
+
+        if (tomorrowForecasts.isEmpty) {
+          print('No forecast data found for tomorrow');
+          return null;
+        }
+
+        double tempSum = 0;
+        double tempMax = double.negativeInfinity;
+        double tempMin = double.infinity;
+        double humiditySum = 0;
+        double pressureSum = 0;
+        double windSpeedSum = 0;
+        double windDegSum = 0;
+        double popMax = 0;
+        String description = '';
+        String icon = '';
+
+        for (var forecast in tomorrowForecasts) {
+          final temp = forecast['main']['temp'].toDouble();
+          tempSum += temp;
+          tempMax = tempMax > temp ? tempMax : temp;
+          tempMin = tempMin < temp ? tempMin : temp;
+
+          humiditySum += forecast['main']['humidity'];
+          pressureSum += forecast['main']['pressure'];
+          windSpeedSum += forecast['wind']['speed'];
+          windDegSum += forecast['wind']['deg'] ?? 0;
+
+          final pop = (forecast['pop'] ?? 0).toDouble();
+          popMax = popMax > pop ? popMax : pop;
+
+          if (description.isEmpty) {
+            description = forecast['weather'][0]['description'];
+            icon = forecast['weather'][0]['icon'];
+          }
+        }
+
+        final count = tomorrowForecasts.length;
+        return {
+          'dt': tomorrow.millisecondsSinceEpoch ~/ 1000,
+          'temp': {
+            'max': tempMax,
+            'min': tempMin,
+            'avg': tempSum / count,
+          },
+          'humidity': (humiditySum / count).round(),
+          'pressure': (pressureSum / count).round(),
+          'wind_speed': windSpeedSum / count,
+          'wind_deg': (windDegSum / count).round(),
+          'pop': popMax,
+          'weather': [
+            {
+              'description': description,
+              'icon': icon,
+            }
+          ],
+          'timezone': data['city']['timezone'] ?? 0,
+        };
+      } else {
+        print('Forecast API error: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching tomorrow weather: $e');
       return null;
     }
   }
 
   String _formatWeatherNotification(
       Map<String, dynamic> tomorrowData, String cityName, int? timezone) {
-    final maxTemp = tomorrowData['temp']?['max']?.round() ?? 0;
-    final minTemp = tomorrowData['temp']?['min']?.round() ?? 0;
-    final avgTemp = ((maxTemp + minTemp) / 2).round();
+    final tempData = tomorrowData['temp'] ?? {};
+    final maxTemp = tempData['max']?.round() ?? 0;
+    final minTemp = tempData['min']?.round() ?? 0;
+    final avgTemp = tempData['avg']?.round() ?? 0;
     final humidity = tomorrowData['humidity'] ?? 0;
     final weatherDescription =
         tomorrowData['weather']?[0]?['description']?.toString() ?? 'N/A';
@@ -182,14 +446,7 @@ class _ManageNoteState extends State<ManageNotification> {
         : '0.0');
     final windDegree = tomorrowData['wind_deg'] ?? 0;
     final pressure = tomorrowData['pressure'] ?? 0;
-    final sunrise = tomorrowData['sunrise'] != null
-        ? FormattingService.formatEpochTimeToTime(
-            tomorrowData['sunrise'], timezone ?? 0)
-        : 'N/A';
-    final sunset = tomorrowData['sunset'] != null
-        ? FormattingService.formatEpochTimeToTime(
-            tomorrowData['sunset'], timezone ?? 0)
-        : 'N/A';
+
     final date = DateTime.fromMillisecondsSinceEpoch(tomorrowData['dt'] * 1000);
     final dateString = '${date.day}/${date.month}/${date.year}';
 
@@ -201,58 +458,48 @@ Dự báo thời tiết tại $cityName ngày $dateString:
 - Xác suất mưa: ${pop}%
 - Gió: $windSpeed km/h, hướng ${windDegree}°
 - Áp suất: ${pressure} hPa
-- Mặt trời mọc: $sunrise, lặn: $sunset
 ''';
   }
 
   Future<void> _scheduleWeatherNotification() async {
     try {
-      final double latitude = 10.762622; // Mặc định vĩ độ
-      final double longitude = 106.660172; // Mặc định kinh độ
-      final String cityName = 'Ho Chi Minh City';
-
       await NotificationService().cancelAllNotifications();
 
-      final tomorrowData = await _fetchTomorrowWeather(latitude, longitude);
+      final tomorrowData = await _fetchTomorrowWeather();
       if (tomorrowData == null) {
         _showErrorSnackBar('Không thể lấy dữ liệu thời tiết ngày mai');
         return;
       }
 
-      final timezone = WeatherService.dailyData['timezone'] as int? ?? 0;
+      final timezone = tomorrowData['timezone'] as int? ?? 0;
+      final cityName = currentLocationName ?? 'Vị trí hiện tại';
       final notificationBody =
           _formatWeatherNotification(tomorrowData, cityName, timezone);
 
-      // Kiểm tra có phải đang chạy trên emulator không
-      bool isEmulator = false;
-
-      // Cách đơn giản phát hiện emulator:
-      // Bạn có thể dùng package device_info hoặc tự check platform/environment variables.
-      // Ở đây là ví dụ giả lập, bạn có thể chỉnh lại:
+      // Test mode cho debug - set thành false để test ngay
+      bool isPhysicalDevice = true;
       if (!kIsWeb && Platform.isAndroid) {
-        // Ví dụ check device model hoặc manufacturer có chứa "Emulator", "sdk" ...
-        // Mình bỏ qua chi tiết, bạn có thể thêm kiểm tra này nếu muốn.
-        isEmulator = false; // Thay true nếu muốn test emulator
+        isPhysicalDevice = true; // Thay thành false để test ngay
       }
 
-      if (isEmulator) {
-        // Nếu đang chạy emulator, hiển thị notification ngay
+      if (!isPhysicalDevice) {
+        // Test mode - hiển thị thông báo ngay
         await NotificationService().showNotification(
           id: 0,
           title: 'Dự báo thời tiết ngày mai',
           body: notificationBody,
         );
-        _showSnackBar('Đã gửi thông báo thời tiết ngay trên Emulator');
-        print('Notification shown immediately on Emulator');
+        _showSnackBar('Đã gửi thông báo thời tiết ngay (Test mode)');
+        print('Notification shown immediately for testing');
       } else {
-        // Trên thiết bị thật, lên lịch thông báo theo thời gian đã chọn
+        // Production mode - lên lịch thông báo
         final now = DateTime.now();
         final scheduledTime = DateTime(
           notificationDate.year,
           notificationDate.month,
           notificationDate.day,
-          notificationTime.hour,
-          notificationTime.minute,
+          notificationTime!.hour,
+          notificationTime!.minute,
         );
         final finalScheduledDate = scheduledTime.isBefore(now)
             ? scheduledTime.add(Duration(days: 1))
@@ -261,14 +508,14 @@ Dự báo thời tiết tại $cityName ngày $dateString:
         await NotificationService().scheduleDailyWeatherNotification(
           id: 0,
           time:
-              '${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}',
+              '${notificationTime!.hour}:${notificationTime!.minute.toString().padLeft(2, '0')}',
           title: 'Dự báo thời tiết ngày mai',
           body: notificationBody,
           scheduledDate: finalScheduledDate,
         );
 
         _showSnackBar(
-            'Đã lên lịch thông báo thời tiết cho ${formatTimeDisplay(notificationTime)}');
+            'Đã lên lịch thông báo thời tiết cho ${formatTimeDisplay(notificationTime!)}');
         print('Notification scheduled for $finalScheduledDate');
       }
     } catch (e) {
@@ -284,12 +531,7 @@ Dự báo thời tiết tại $cityName ngày $dateString:
   }
 
   String _getCurrentLocationName() {
-    final currentLocation = _locations.firstWhere(
-      (loc) => loc['isCurrent'] == true,
-      orElse: () =>
-          _locations.isNotEmpty ? _locations.first : {'name': 'Chưa có vị trí'},
-    );
-    return currentLocation['name'] as String;
+    return currentLocationName ?? 'Vị trí hiện tại';
   }
 
   void _showSnackBar(String message) {
@@ -320,11 +562,13 @@ Dự báo thời tiết tại $cityName ngày $dateString:
     return Scaffold(
       appBar: AppBar(
         title: Text('Quản lý thông báo'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: () async {
-              await _loadSavedLocations();
+              await _getCurrentLocation();
               if (notificationEnabled) {
                 await _scheduleWeatherNotification();
               }
@@ -334,7 +578,7 @@ Dự báo thời tiết tại $cityName ngày $dateString:
           ),
         ],
       ),
-      body: !_isInitialized
+      body: !_isInitialized || notificationTime == null
           ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               child: Padding(
@@ -384,7 +628,7 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                             ListTile(
                               title: Text('Thời gian thông báo'),
                               subtitle: Text(
-                                formatTimeDisplay(notificationTime),
+                                formatTimeDisplay(notificationTime!),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -399,7 +643,7 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                                 if (!notificationEnabled) return;
                                 final TimeOfDay? picked = await showTimePicker(
                                   context: context,
-                                  initialTime: notificationTime,
+                                  initialTime: notificationTime!,
                                   builder:
                                       (BuildContext context, Widget? child) {
                                     return MediaQuery(
@@ -418,15 +662,23 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                                 }
                               },
                             ),
-                            if (_locations.isNotEmpty) ...[
-                              Divider(),
+                            Divider(),
+                            ListTile(
+                              title: Text('Vị trí hiện tại'),
+                              subtitle: Text(
+                                _getCurrentLocationName(),
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              leading: Icon(Icons.location_on),
+                            ),
+                            if (currentPosition != null) ...[
                               ListTile(
-                                title: Text('Vị trí hiện tại'),
+                                title: Text('Tọa độ'),
                                 subtitle: Text(
-                                  _getCurrentLocationName(),
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  'Lat: ${currentPosition!.latitude.toStringAsFixed(4)}, Lon: ${currentPosition!.longitude.toStringAsFixed(4)}',
+                                  style: TextStyle(fontSize: 12),
                                 ),
-                                leading: Icon(Icons.location_on),
+                                leading: Icon(Icons.gps_fixed),
                               ),
                             ],
                           ],
@@ -456,10 +708,35 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                             ),
                             SizedBox(height: 12),
                             Text(
-                              'Ứng dụng sẽ gửi cho bạn thông báo dự báo thời tiết mỗi ngày vào giờ đã chọn. '
+                              'Ứng dụng sẽ gửi thông báo dự báo thời tiết hàng ngày vào giờ bạn chọn. '
                               'Thông báo sẽ cung cấp thông tin về nhiệt độ, độ ẩm, áp suất, thời tiết, và '
-                              'xác suất mưa cho ngày hôm sau.',
+                              'xác suất mưa cho ngày hôm sau dựa trên vị trí hiện tại của bạn.',
                               style: TextStyle(fontSize: 14),
+                            ),
+                            SizedBox(height: 8),
+                            Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: Colors.blue.withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.tips_and_updates,
+                                      color: Colors.blue, size: 20),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Mẹo: Thời gian thông báo sẽ được lưu và áp dụng cho lần tiếp theo.',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blue[700]),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
