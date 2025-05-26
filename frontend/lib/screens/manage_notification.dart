@@ -46,8 +46,10 @@ class _ManageNoteState extends State<ManageNotification> {
         _isInitialized = true;
       });
 
+      // CHỈ schedule notification khi user BẬT notification, không hiện thông báo snackbar
       if (notificationEnabled) {
-        await _scheduleWeatherNotification();
+        print('Auto-scheduling notification on app init...');
+        await _scheduleWeatherNotificationSilent();
       }
     } catch (e) {
       print('Error initializing app: $e');
@@ -450,17 +452,77 @@ class _ManageNoteState extends State<ManageNotification> {
     final date = DateTime.fromMillisecondsSinceEpoch(tomorrowData['dt'] * 1000);
     final dateString = '${date.day}/${date.month}/${date.year}';
 
-    return '''
-Dự báo thời tiết tại $cityName ngày $dateString:
+    return '''Dự báo thời tiết tại $cityName ngày $dateString:
 - Nhiệt độ: ${maxTemp}°C (Cao nhất), ${minTemp}°C (Thấp nhất), ${avgTemp}°C (Trung bình)
 - Độ ẩm: ${humidity}%
 - Thời tiết: $weatherDescription
 - Xác suất mưa: ${pop}%
 - Gió: $windSpeed km/h, hướng ${windDegree}°
-- Áp suất: ${pressure} hPa
-''';
+- Áp suất: ${pressure} hPa''';
   }
 
+  // Function để schedule thầm lặng (không hiện snackbar)
+  Future<void> _scheduleWeatherNotificationSilent() async {
+    try {
+      await NotificationService().cancelAllNotifications();
+
+      final tomorrowData = await _fetchTomorrowWeather();
+      if (tomorrowData == null) {
+        print('Cannot fetch weather data for silent scheduling');
+        return;
+      }
+
+      final timezone = tomorrowData['timezone'] as int? ?? 0;
+      final cityName = currentLocationName ?? 'Vị trí hiện tại';
+      final notificationBody =
+          _formatWeatherNotification(tomorrowData, cityName, timezone);
+
+      // Tính toán thời gian schedule chính xác
+      final now = DateTime.now();
+
+      // Tạo thời gian schedule cho hôm nay
+      final todayScheduledTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        notificationTime!.hour,
+        notificationTime!.minute,
+        0, // seconds = 0
+        0, // milliseconds = 0
+      );
+
+      DateTime scheduledTime;
+      if (todayScheduledTime.isAfter(now)) {
+        // Thời gian hôm nay chưa qua -> schedule cho hôm nay
+        scheduledTime = todayScheduledTime;
+        print('Scheduling for TODAY: $scheduledTime');
+      } else {
+        // Thời gian hôm nay đã qua -> schedule cho ngày mai
+        scheduledTime = todayScheduledTime.add(Duration(days: 1));
+        print('Scheduling for TOMORROW: $scheduledTime');
+      }
+
+      // Schedule notification với thời gian chính xác
+      await NotificationService().scheduleDailyWeatherNotification(
+        id: 0,
+        time:
+            '${notificationTime!.hour}:${notificationTime!.minute.toString().padLeft(2, '0')}',
+        title: 'Dự báo thời tiết ngày mai',
+        body: notificationBody,
+        scheduledDate: scheduledTime,
+      );
+
+      final timeUntil = scheduledTime.difference(now);
+      print('Silent notification scheduled for: $scheduledTime');
+      print(
+          'Time until notification: ${timeUntil.inMinutes} minutes (${timeUntil.inHours}h ${timeUntil.inMinutes % 60}m)');
+      print('Scheduled time: ${formatTimeDisplay(notificationTime!)}');
+    } catch (e) {
+      print('Error in silent scheduling: $e');
+    }
+  }
+
+  // Function để schedule có thông báo cho user
   Future<void> _scheduleWeatherNotification() async {
     try {
       await NotificationService().cancelAllNotifications();
@@ -476,48 +538,78 @@ Dự báo thời tiết tại $cityName ngày $dateString:
       final notificationBody =
           _formatWeatherNotification(tomorrowData, cityName, timezone);
 
-      // Test mode cho debug - set thành false để test ngay
-      bool isPhysicalDevice = true;
-      if (!kIsWeb && Platform.isAndroid) {
-        isPhysicalDevice = true; // Thay thành false để test ngay
+      // Tính toán thời gian schedule chính xác
+      final now = DateTime.now();
+
+      // Tạo thời gian schedule cho hôm nay
+      final todayScheduledTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        notificationTime!.hour,
+        notificationTime!.minute,
+        0, // seconds = 0
+        0, // milliseconds = 0
+      );
+
+      DateTime scheduledTime;
+      if (todayScheduledTime.isAfter(now)) {
+        // Thời gian hôm nay chưa qua -> schedule cho hôm nay
+        scheduledTime = todayScheduledTime;
+        print('Scheduling for TODAY: $scheduledTime');
+      } else {
+        // Thời gian hôm nay đã qua -> schedule cho ngày mai
+        scheduledTime = todayScheduledTime.add(Duration(days: 1));
+        print('Scheduling for TOMORROW: $scheduledTime');
       }
 
-      if (!isPhysicalDevice) {
-        // Test mode - hiển thị thông báo ngay
+      final timeUntil = scheduledTime.difference(now);
+
+      // GIẢI PHÁP CHO MÁY ẢO: Nếu thời gian quá gần (dưới 2 phút), hiện ngay
+      if (timeUntil.inMinutes < 2) {
+        print(
+            'Time too close (${timeUntil.inMinutes}m), showing notification immediately for emulator compatibility');
         await NotificationService().showNotification(
           id: 0,
           title: 'Dự báo thời tiết ngày mai',
           body: notificationBody,
         );
-        _showSnackBar('Đã gửi thông báo thời tiết ngay (Test mode)');
-        print('Notification shown immediately for testing');
-      } else {
-        // Production mode - lên lịch thông báo
-        final now = DateTime.now();
-        final scheduledTime = DateTime(
-          notificationDate.year,
-          notificationDate.month,
-          notificationDate.day,
-          notificationTime!.hour,
-          notificationTime!.minute,
-        );
-        final finalScheduledDate = scheduledTime.isBefore(now)
-            ? scheduledTime.add(Duration(days: 1))
-            : scheduledTime;
-
-        await NotificationService().scheduleDailyWeatherNotification(
-          id: 0,
-          time:
-              '${notificationTime!.hour}:${notificationTime!.minute.toString().padLeft(2, '0')}',
-          title: 'Dự báo thời tiết ngày mai',
-          body: notificationBody,
-          scheduledDate: finalScheduledDate,
-        );
-
-        _showSnackBar(
-            'Đã lên lịch thông báo thời tiết cho ${formatTimeDisplay(notificationTime!)}');
-        print('Notification scheduled for $finalScheduledDate');
+        _showSnackBar('Thông báo đã hiện ngay (thời gian quá gần)');
+        return;
       }
+
+      // Schedule notification với thời gian chính xác
+      await NotificationService().scheduleDailyWeatherNotification(
+        id: 0,
+        time:
+            '${notificationTime!.hour}:${notificationTime!.minute.toString().padLeft(2, '0')}',
+        title: 'Dự báo thời tiết ngày mai',
+        body: notificationBody,
+        scheduledDate: scheduledTime,
+      );
+
+      // Hiển thị thông báo cho user
+      String timeMessage;
+
+      if (timeUntil.inDays >= 1) {
+        timeMessage =
+            'vào ngày mai lúc ${formatTimeDisplay(notificationTime!)}';
+      } else if (timeUntil.inHours >= 1) {
+        timeMessage =
+            'sau ${timeUntil.inHours}h ${timeUntil.inMinutes % 60}p (${formatTimeDisplay(notificationTime!)})';
+      } else if (timeUntil.inMinutes >= 1) {
+        timeMessage =
+            'sau ${timeUntil.inMinutes}p (${formatTimeDisplay(notificationTime!)})';
+      } else {
+        timeMessage = 'trong vài giây nữa';
+      }
+
+      _showSnackBar('Đã lên lịch thông báo $timeMessage');
+      print('Notification scheduled for: $scheduledTime');
+      print(
+          'Time until notification: ${timeUntil.inMinutes} minutes (${timeUntil.inHours}h ${timeUntil.inMinutes % 60}m)');
+      print('Current time: $now');
+      print('Scheduled time: ${formatTimeDisplay(notificationTime!)}');
     } catch (e) {
       print('Error scheduling notification: $e');
       _showErrorSnackBar('Lỗi khi lên lịch thông báo: $e');
@@ -724,12 +816,12 @@ Dự báo thời tiết tại $cityName ngày $dateString:
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.tips_and_updates,
+                                  Icon(Icons.schedule_send,
                                       color: Colors.blue, size: 20),
                                   SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      'Mẹo: Thời gian thông báo sẽ được lưu và áp dụng cho lần tiếp theo.',
+                                      'Thông báo sẽ xuất hiện đúng vào thời gian bạn đã chọn. Trên máy ảo, nếu thời gian dưới 2 phút sẽ hiện ngay.',
                                       style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.blue[700]),
