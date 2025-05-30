@@ -21,18 +21,43 @@ class SearchPlace extends StatefulWidget {
   _SearchPlaceState createState() => _SearchPlaceState();
 }
 
-class _SearchPlaceState extends State<SearchPlace> {
+class _SearchPlaceState extends State<SearchPlace> with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<String> _places = [];
   var data;
   bool _isListening = false;
   late stt.SpeechToText _speech;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
+    _initializeSpeech();
+    
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    
+    _animation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  Future<void> _initializeSpeech() async {
+    bool available = await _speech.initialize(
+      onError: (error) => print('Speech recognition error: $error'),
+      onStatus: (status) => print('Speech recognition status: $status'),
+    );
+    if (!available) {
+      print('Speech recognition not available');
+    }
   }
 
   void _onSearchChanged(String query) {
@@ -118,98 +143,158 @@ class _SearchPlaceState extends State<SearchPlace> {
 
   void _listen() async {
     if (!_isListening) {
-      bool available = await _speech.initialize();
-      if (available) {
+      try {
         setState(() => _isListening = true);
-        _speech.listen(
-          onResult: (val) {
-            _searchController.text = val.recognizedWords;
-            _onSearchChanged(val.recognizedWords);
+        _animationController.repeat(reverse: true);
+        
+        await _speech.listen(
+          onResult: (result) {
+            if (result.finalResult) {
+              _handleSpeechResult(result.recognizedWords);
+            }
           },
+          listenFor: Duration(seconds: 30),
+          pauseFor: Duration(seconds: 3),
+          partialResults: true,
+          localeId: 'vi-VN',
+          cancelOnError: true,
+          listenMode: stt.ListenMode.confirmation,
         );
+      } catch (e) {
+        print('Error starting speech recognition: $e');
+        _stopListening();
       }
     } else {
+      _stopListening();
+    }
+  }
+
+  void _stopListening() {
+    setState(() {
+      _isListening = false;
+      _speech.stop();
+      _animationController.stop();
+    });
+  }
+
+  void _handleSpeechResult(String recognizedWords) {
+    if (recognizedWords.isNotEmpty) {
       setState(() {
-        _isListening = false;
-        _speech.stop();
-        _searchController.clear(); // ✅ Xóa nội dung text field
-        _onSearchChanged(''); // ✅ Gọi lại tìm kiếm rỗng để xoá danh sách
-        _places.clear(); // ✅ Xoá danh sách kết quả
+        _searchController.text = recognizedWords;
+        _onSearchChanged(recognizedWords);
       });
     }
   }
 
   @override
+  void dispose() {
+    _speech.stop();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('search'.tr)),
-      body: Column(
+      appBar: AppBar(title: Text('Search Places')),
+      body: Stack(
         children: [
-          Row(
+          Column(
             children: [
-              Expanded(
-                child: Container(
-                  margin:
-                      EdgeInsets.only(top: 20, bottom: 10, left: 16, right: 16),
-                  padding: EdgeInsets.symmetric(horizontal: 15),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'type_place'.tr,
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.only(left: 20, top: 10),
-                      suffixIcon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_searchController.text.isNotEmpty)
-                            IconButton(
-                              icon: Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                _onSearchChanged('');
-                                setState(() {
-                                  _places.clear();
-                                });
-                              },
-                            ),
-                          IconButton(
-                            icon:
-                                Icon(_isListening ? Icons.mic : Icons.mic_none),
-                            onPressed: _listen,
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      margin: EdgeInsets.only(top: 20, bottom: 10, left: 16, right: 16),
+                      padding: EdgeInsets.symmetric(horizontal: 15),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Type your place name',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.only(left: 20, top: 10),
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_searchController.text.isNotEmpty)
+                                IconButton(
+                                  icon: Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _onSearchChanged('');
+                                    setState(() {
+                                      _places.clear();
+                                    });
+                                  },
+                                ),
+                              IconButton(
+                                icon: Icon(
+                                  _isListening ? Icons.mic : Icons.mic_none,
+                                  color: _isListening ? Colors.red : null,
+                                ),
+                                onPressed: _listen,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
+                        onChanged: (value) {
+                          _onSearchChanged(value);
+                          setState(() {});
+                        },
                       ),
                     ),
-                    onChanged: (value) {
-                      _onSearchChanged(value);
-                      setState(() {});
-                    },
                   ),
+                ],
+              ),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: _places.length,
+                  separatorBuilder: (context, index) => Divider(
+                    color: Colors.grey,
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(_places[index]),
+                      onTap: () => _selectPlace(_places[index], index),
+                    );
+                  },
                 ),
               ),
             ],
           ),
-          Expanded(
-            child: ListView.separated(
-              itemCount: _places.length,
-              separatorBuilder: (context, index) => Divider(
-                color: Colors.grey,
-                height: 1,
-                indent: 16,
-                endIndent: 16,
+          if (_isListening)
+            Center(
+              child: AnimatedBuilder(
+                animation: _animation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _animation.value,
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.8),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.mic,
+                          color: Colors.white,
+                          size: 80,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(_places[index]),
-                  onTap: () => _selectPlace(_places[index], index),
-                );
-              },
             ),
-          ),
         ],
       ),
     );
