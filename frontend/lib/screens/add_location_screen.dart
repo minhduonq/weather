@@ -54,11 +54,61 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     }
   }
 
+  // Check if location already exists in database
+  Future<bool> checkLocationExists(String cityName) async {
+    try {
+      final db = DatabaseHelper();
+
+      // Kiểm tra trực tiếp bằng method getLocationByName
+      final existingLocation = await db.getLocationByName(cityName.trim());
+      if (existingLocation.isNotEmpty) {
+        return true;
+      }
+
+      // Kiểm tra thêm với các biến thể không phân biệt hoa thường
+      final locations = await db.getAllLocations();
+      final normalizedCityName = cityName.trim().toLowerCase();
+
+      for (var location in locations) {
+        final existingCityName =
+            location['name'].toString().trim().toLowerCase();
+        if (existingCityName == normalizedCityName) {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      print('Error checking location exists: $e');
+      return false;
+    }
+  }
+
   // Save the location to the database and return to the previous screen
   Future<void> saveLocation() async {
     final cityName = _cityController.text.trim();
+
+    // Validate city exists on OpenWeatherMap
     final isValid = await validateCity(cityName);
-    if (isValid) {
+    if (!isValid) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      // Check if location already exists in database
+      final locationExists = await checkLocationExists(cityName);
+      if (locationExists) {
+        setState(() {
+          _errorMessage = 'Địa điểm "$cityName" đã tồn tại trong danh sách.';
+          _isLoading = false;
+        });
+        return;
+      }
+
       final db = DatabaseHelper();
       // Fetch coordinates for the city
       final weatherData = await fetchWeather(cityName);
@@ -75,6 +125,15 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
           _errorMessage = 'Không thể lấy tọa độ cho thành phố "$cityName".';
         });
       }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Có lỗi xảy ra khi lưu địa điểm. Vui lòng thử lại.';
+      });
+      print('Error saving location: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
