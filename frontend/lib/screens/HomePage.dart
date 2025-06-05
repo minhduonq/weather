@@ -71,25 +71,79 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
+  Future<void> _requestLocationAndLoadData() async {
+    bool hasPermission = await LocationService.requestLocationPermission();
+    if (hasPermission) {
+      // Use the updated function that saves to database
+      Position? position = await LocationService.getCurrentLocationAndSave();
+
+      // Set the currentPosition for temporary use
+      if (position != null) {
+        setState(() {
+          currentPosition = position;
+        });
+      }
+
+      // Load the location from database instead of directly using currentPosition
+      await _loadLocationFromDatabase();
+    }
+  }
+
+  Future<void> _loadLocationFromDatabase() async {
+    final dbHelper = DatabaseHelper();
+    final currentLoc = await dbHelper.getCurrentLocation();
+
+    if (currentLoc != null) {
+      setState(() {
+        // Set KeyLocation from database values
+        KeyLocation = Position(
+          latitude: currentLoc['latitude'],
+          longitude: currentLoc['longitude'],
+          timestamp: DateTime.now(),
+          accuracy: 0.0,
+          altitude: 0.0,
+          heading: 0.0,
+          speed: 0.0,
+          speedAccuracy: 0.0,
+          altitudeAccuracy: 0.0,
+          headingAccuracy: 0.0,
+        );
+
+        // Set location name
+        LocationName = currentLoc['name'];
+        InitialName = currentLoc['name'];
+      });
+      // Load weather data for this location
+      await WeatherService.loadWeatherData(
+          currentLoc['latitude'], currentLoc['longitude']);
+    }
+  }
+
   Future<void> _loadSavedLocations() async {
     _locations = [];
+    final dbHelper = DatabaseHelper();
+    final savedLocations = await dbHelper.getAllLocations();
 
-    // Thêm vị trí hiện tại của người dùng đầu tiên
-    if (currentPosition != null) {
+    // Find current location
+    final currentLoc = savedLocations.firstWhere(
+      (loc) => loc['is_current'] == 1,
+      orElse: () => <String, dynamic>{},
+    );
+
+    // Add current location first if it exists
+    if (currentLoc.isNotEmpty) {
       _locations.add({
-        'id': 0,
-        'name': InitialName,
-        'latitude': currentPosition!.latitude,
-        'longitude': currentPosition!.longitude,
+        'id': currentLoc['id'],
+        'name': currentLoc['name'],
+        'latitude': currentLoc['latitude'],
+        'longitude': currentLoc['longitude'],
         'isCurrent': true
       });
     }
 
-    // Thêm các vị trí đã lưu
-    final savedLocations = await DatabaseHelper().getAllLocations();
+    // Add other saved locations
     for (var location in savedLocations) {
-      // Bỏ qua nếu trùng với vị trí hiện tại
-      if (location['name'] != InitialName) {
+      if (location['is_current'] != 1) {
         _locations.add({
           'id': location['id'],
           'name': location['name'],
@@ -100,6 +154,32 @@ class _HomePageState extends State<HomePage> {
       }
     }
   }
+
+  // // Thêm vị trí hiện tại của người dùng đầu tiên
+  // if (currentPosition != null) {
+  //   _locations.add({
+  //     'id': 0,
+  //     'name': InitialName,
+  //     'latitude': currentPosition!.latitude,
+  //     'longitude': currentPosition!.longitude,
+  //     'isCurrent': true
+  //   });
+  // }
+
+  // // Thêm các vị trí đã lưu
+  // final savedLocations = await DatabaseHelper().getAllLocations();
+  // for (var location in savedLocations) {
+  //   // Bỏ qua nếu trùng với vị trí hiện tại
+  //   if (location['name'] != InitialName) {
+  //     _locations.add({
+  //       'id': location['id'],
+  //       'name': location['name'],
+  //       'latitude': location['latitude'],
+  //       'longitude': location['longitude'],
+  //       'isCurrent': false
+  //     });
+  //   }
+  // }
 
   void _setCurrentLocationIndex() {
     if (KeyLocation == null) {
@@ -122,12 +202,12 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _requestLocationAndLoadData() async {
-    bool hasPermission = await LocationService.requestLocationPermission();
-    if (hasPermission) {
-      await _getCurrentLocation();
-    }
-  }
+  // Future<void> _requestLocationAndLoadData() async {
+  //   bool hasPermission = await LocationService.requestLocationPermission();
+  //   if (hasPermission) {
+  //     await _getCurrentLocation();
+  //   }
+  // }
 
   Future<void> _getCurrentLocation() async {
     Position? position = await LocationService.getCurrentLocation();
