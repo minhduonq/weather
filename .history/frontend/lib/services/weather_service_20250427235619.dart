@@ -1,23 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:get/get.dart'; // Thêm import này
 import 'constants.dart';
 import 'database.dart';
 
 class WeatherService {
-  // Thay thế các biến thông thường bằng Rx variables
-  static final RxMap<String, dynamic> _currentData = RxMap<String, dynamic>({});
-  static final RxMap<String, dynamic> _hourlyData = RxMap<String, dynamic>({});
-  static final RxMap<String, dynamic> _dailyData = RxMap<String, dynamic>({});
-  static final RxMap<String, dynamic> _weatherName = RxMap<String, dynamic>({});
+  static Map<String, dynamic> currentData = {};
+  static Map<String, dynamic> hourlyData = {};
+  static Map<String, dynamic> dailyData = {};
+  static Map<String, dynamic> weatherName = {};
 
-  // Getters cho các biến Rx
-  static Map<String, dynamic> get currentData => _currentData;
-  static Map<String, dynamic> get hourlyData => _hourlyData;
-  static Map<String, dynamic> get dailyData => _dailyData;
-  static Map<String, dynamic> get weatherName => _weatherName;
-
-  // Phương thức _processDailyData giữ nguyên
+  // Thêm phương thức này vào WeatherService
   static Map<String, dynamic> _processDailyData(Map<String, dynamic> rawData) {
     if (rawData.isEmpty || rawData['list'] == null) {
       return rawData;
@@ -29,8 +21,7 @@ class WeatherService {
 
     for (var item in list) {
       // Tạo khóa theo ngày từ timestamp
-      final DateTime date =
-          DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
+      final DateTime date = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
       final String dayKey = "${date.year}-${date.month}-${date.day}";
 
       if (!uniqueDays.containsKey(dayKey)) {
@@ -48,9 +39,10 @@ class WeatherService {
     return processedData;
   }
 
+  // Fetch weather data from API
   static Future<void> fetchWeatherData(double lat, double lon) async {
     final uri =
-        'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$API_KEY&units=${type.value}';
+        'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$API_KEY&units=$type';
     try {
       final response = await http.get(Uri.parse(uri));
       if (response.statusCode == 200) {
@@ -90,8 +82,7 @@ class WeatherService {
         };
 
         await dbHelper.insertWeatherData(weatherData);
-        // Cập nhật biến Rx thay vì gán trực tiếp
-        _currentData.assignAll(data);
+        currentData = data;
       } else {
         print('Failed to load weather data');
       }
@@ -108,7 +99,7 @@ class WeatherService {
 
   static Future<void> fetchHourlyForecast(double lat, double lon) async {
     final hourly =
-        'https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=$lat&lon=$lon&appid=$API_KEY&cnt=24&units=${type.value}';
+        'https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=$lat&lon=$lon&appid=$API_KEY&cnt=24&units=$type';
     try {
       final response = await http.get(Uri.parse(hourly));
       if (response.statusCode == 200) {
@@ -135,8 +126,7 @@ class WeatherService {
           await dbHelper.insertHourlyData(hourlyData);
         }
 
-        // Cập nhật biến Rx thay vì gán trực tiếp
-        _hourlyData.assignAll(data);
+        hourlyData = data;
       } else {
         throw Exception('Failed to load weather data hourly');
       }
@@ -147,12 +137,12 @@ class WeatherService {
 
   static Future<void> fetchDailyForecast(double lat, double lon) async {
     final daily =
-        'http://api.openweathermap.org/data/2.5/forecast/daily?lat=$lat&lon=$lon&cnt=7&appid=$API_KEY&units=${type.value}';
+        'http://api.openweathermap.org/data/2.5/forecast/daily?lat=$lat&lon=$lon&cnt=7&appid=$API_KEY&units=$type';
     try {
       final response = await http.get(Uri.parse(daily));
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body);
-        final data = _processDailyData(rawData);
+        data = _processDailyData(rawData);
 
         // Get location_id from API
         final locationId = data['city']['id'];
@@ -175,8 +165,7 @@ class WeatherService {
           await dbHelper.insertDailyData(dailyData);
         }
 
-        // Cập nhật biến Rx thay vì gán trực tiếp
-        _dailyData.assignAll(data);
+        dailyData = data;
       } else {
         throw Exception('Failed to load weather data daily');
       }
@@ -185,7 +174,7 @@ class WeatherService {
     }
   }
 
-  // Cập nhật load methods
+  // Load weather data from database
   static Future<void> loadWeatherDataFromDatabase(int locationId) async {
     final dbHelper = DatabaseHelper();
 
@@ -196,14 +185,17 @@ class WeatherService {
 
       // Load current weather data
       final weatherDataList =
-          await dbHelper.getWeatherDataByLocationId(locationId);
+      await dbHelper.getWeatherDataByLocationId(locationId);
       if (weatherDataList.isNotEmpty) {
         final weatherData = weatherDataList.first;
         // Convert database data to format expected by UI
-        final currentDataMap = {
+        currentData = {
           'id': locationId,
           'name': location['name'],
-          'coord': {'lat': location['latitude'], 'lon': location['longitude']},
+          'coord': {
+            'lat': location['latitude'],
+            'lon': location['longitude']
+          },
           'main': {
             'temp': weatherData['temperature'],
             'feels_like': weatherData['feelsLike'],
@@ -213,11 +205,7 @@ class WeatherService {
             'humidity': weatherData['humidity'],
             'sea_level': weatherData['pressure']
           },
-          'wind': {
-            'speed': weatherData['windSpeed'],
-            'deg': weatherData['windDeg'],
-            'gust': weatherData['windGust']
-          },
+          'wind': {'speed': weatherData['windSpeed'], 'deg': weatherData['windDeg'], 'gust': weatherData['windGust']},
           'clouds': {'all': weatherData['cloud']},
           'sys': {
             'sunrise': weatherData['sunrise'],
@@ -234,9 +222,6 @@ class WeatherService {
           'timezone': weatherData['timeZone'],
           'dt': DateTime.now().millisecondsSinceEpoch ~/ 1000
         };
-
-        // Cập nhật biến Rx
-        _currentData.assignAll(currentDataMap);
       }
 
       // Load hourly data
@@ -247,79 +232,69 @@ class WeatherService {
     }
   }
 
-  static Future<void> loadHourlyDataFromDatabase(
-      int locationId, Map<String, dynamic> location) async {
+  static Future<void> loadHourlyDataFromDatabase(int locationId, Map<String, dynamic> location) async {
     final dbHelper = DatabaseHelper();
     final hourlyDataList = await dbHelper.getHourlyDataByLocationId(locationId);
 
     if (hourlyDataList.isNotEmpty) {
       // Convert database data to format expected by UI
-      final hourlyDataMap = {
+      hourlyData = {
         'city': {
           'id': locationId,
           'name': location['name'],
-          'coord': {'lat': location['latitude'], 'lon': location['longitude']}
+          'coord': {
+            'lat': location['latitude'],
+            'lon': location['longitude']
+          }
         },
-        'list': hourlyDataList
-            .map((hourly) => {
-                  'dt': hourly['time'],
-                  'main': {
-                    'temp': double.parse(
-                        ((hourly['temperatureMax'] + hourly['temperatureMin']) /
-                                2)
-                            .toStringAsFixed(1)),
-                    'temp_max': double.parse(
-                        hourly['temperatureMax'].toStringAsFixed(1)),
-                    'temp_min': double.parse(
-                        hourly['temperatureMin'].toStringAsFixed(1)),
-                    'humidity': hourly['humidity']
-                  },
-                  'weather': [
-                    {'icon': hourly['icon']}
-                  ],
-                  'pop': 0.0 // Default value for precipitation probability
-                })
+        'list': hourlyDataList.map((hourly) => {
+          'dt': hourly['time'],
+          'main': {
+            'temp': double.parse(((hourly['temperatureMax'] + hourly['temperatureMin']) / 2).toStringAsFixed(1)),
+            'temp_max': double.parse(hourly['temperatureMax'].toStringAsFixed(1)),
+            'temp_min': double.parse(hourly['temperatureMin'].toStringAsFixed(1)),
+            'humidity': hourly['humidity']
+          },
+          'weather': [
+            {'icon': hourly['icon']}
+          ],
+          'pop': 0.0 // Default value for precipitation probability
+        })
             .toList()
       };
-
-      // Cập nhật biến Rx
-      _hourlyData.assignAll(hourlyDataMap);
     }
   }
 
-  static Future<void> loadDailyDataFromDatabase(
-      int locationId, Map<String, dynamic> location) async {
+  static Future<void> loadDailyDataFromDatabase(int locationId, Map<String, dynamic> location) async {
     final dbHelper = DatabaseHelper();
     final dailyDataList = await dbHelper.getDailyDataByLocationId(locationId);
 
     if (dailyDataList.isNotEmpty) {
       // Convert database data to format expected by UI
-      final dailyDataMap = {
+      dailyData = {
         'city': {
           'id': locationId,
           'name': location['name'],
-          'coord': {'lat': location['latitude'], 'lon': location['longitude']}
+          'coord': {
+            'lat': location['latitude'],
+            'lon': location['longitude']
+          }
         },
         'list': dailyDataList
             .map((daily) => {
-                  'dt': daily['time'],
-                  'temp': {
-                    'max': double.parse(
-                        daily['temperatureMax'].toStringAsFixed(1)),
-                    'min':
-                        double.parse(daily['temperatureMin'].toStringAsFixed(1))
-                  },
-                  'humidity': daily['humidity'],
-                  'weather': [
-                    {'icon': daily['icon']}
-                  ],
-                  'pop': 0.0
-                })
+          'dt': daily['time'],
+          'temp': {
+            'max': double.parse(daily['temperatureMax'].toStringAsFixed(1)),
+            'min': double.parse(daily['temperatureMin'].toStringAsFixed(1))
+          },
+          'humidity': daily['humidity'],
+          'weather': [
+            {'icon': daily['icon']}
+          ],
+          'pop': 0.0
+        })
             .toList()
       };
-
-      // Cập nhật biến Rx
-      _dailyData.assignAll(dailyDataMap);
     }
   }
 
@@ -347,7 +322,7 @@ class WeatherService {
 
         // Check if data is recent (less than 1 hour old)
         final weatherDataList =
-            await dbHelper.getWeatherDataByLocationId(locationId);
+        await dbHelper.getWeatherDataByLocationId(locationId);
         if (weatherDataList.isNotEmpty) {
           final updatedAt = DateTime.parse(weatherDataList.first['updatedAt']);
           final now = DateTime.now();
@@ -378,17 +353,15 @@ class WeatherService {
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        final nameData = json.decode(utf8.decode(response.bodyBytes));
-        // Cập nhật biến Rx
-        _weatherName.assignAll(nameData);
+        weatherName = json.decode(utf8.decode(response.bodyBytes));
 
         if (LocationName == '') {
-          LocationName = _weatherName.isNotEmpty
-              ? _weatherName["items"][0]["address"]["city"]
+          LocationName = weatherName.isNotEmpty
+              ? weatherName["items"][0]["address"]["city"]
               : "";
         }
-        InitialName = _weatherName.isNotEmpty
-            ? _weatherName["items"][0]["address"]["city"]
+        InitialName = weatherName.isNotEmpty
+            ? weatherName["items"][0]["address"]["city"]
             : "";
       } else {
         throw Exception('Fail to load Location name');

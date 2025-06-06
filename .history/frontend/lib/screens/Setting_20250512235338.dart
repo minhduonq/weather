@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/helpTrans.dart';
-
-import 'manage_notification.dart'; // Import màn hình ManageNotification
-
 import '../services/constants.dart';
 
 class Setting extends StatefulWidget {
@@ -94,11 +91,17 @@ class _SettingsPageState extends State<Setting> {
               onSelected: (value) async {
                 setState(() {
                   _temperatureUnit = value;
-                  type.value = value == 'C' ? 'metric' : 'imperial';
+                  type.value = value == 'C'
+                      ? 'metric'
+                      : 'imperial'; // cập nhật trạng thái toàn cục
                 });
 
+                // Lưu lại vào SharedPreferences
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setString('unit', value);
+
+                // Nếu bạn muốn gọi lại API ở đây thì thêm:
+                // weatherController.fetchWeather(); (ví dụ)
               },
             ),
             _buildDropdownTile(
@@ -142,19 +145,7 @@ class _SettingsPageState extends State<Setting> {
                     fontWeight: FontWeight.w500,
                     letterSpacing: 1),
               ),
-              subtitle: Text(
-                'configure_notification'.tr, // Thêm mô tả
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.blue,
-                ),
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ManageNotification()),
-                );
-              },
+              onTap: () {},
             ),
           ]),
           const SizedBox(height: 18),

@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/helpTrans.dart';
-
-import 'manage_notification.dart'; // Import màn hình ManageNotification
-
 import '../services/constants.dart';
 
 class Setting extends StatefulWidget {
@@ -91,14 +88,13 @@ class _SettingsPageState extends State<Setting> {
                 PopupMenuItem(value: 'C', child: Text('celsius'.tr)),
                 PopupMenuItem(value: 'F', child: Text('fahrenheit'.tr)),
               ],
-              onSelected: (value) async {
+              onSelected: (value) {
                 setState(() {
                   _temperatureUnit = value;
                   type.value = value == 'C' ? 'metric' : 'imperial';
                 });
-
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setString('unit', value);
+                _saveSetting('unit', value);
+                // Gợi ý: có thể gọi lại API nếu cần làm mới dữ liệu thời tiết
               },
             ),
             _buildDropdownTile(
@@ -142,19 +138,7 @@ class _SettingsPageState extends State<Setting> {
                     fontWeight: FontWeight.w500,
                     letterSpacing: 1),
               ),
-              subtitle: Text(
-                'configure_notification'.tr, // Thêm mô tả
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.blue,
-                ),
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ManageNotification()),
-                );
-              },
+              onTap: () {},
             ),
           ]),
           const SizedBox(height: 18),
