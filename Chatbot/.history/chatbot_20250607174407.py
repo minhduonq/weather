@@ -17,6 +17,7 @@ from dataclasses import asdict
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 load_dotenv(find_dotenv())
 
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
@@ -34,6 +35,9 @@ def get_db_connection():
             password='',
             database='weather',
             port = 3307 ,
+            charset='utf8mb4',  
+            collation='utf8mb4_unicode_ci',
+            use_unicode=True
         )
         return connection
     except Error as e:
@@ -320,6 +324,14 @@ async def chat(conversation_id: str, message: str):
         conversations_history[conversation_id] = conversations
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class MessageRequest(BaseModel):
     uid: str

@@ -65,16 +65,14 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
       final uid =
           'user_${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}';
 
-      final response = await http
-          .post(
-            Uri.parse('http://localhost:8000/chat'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'uid': uid,
-              'message': userMessage,
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await http.post(
+        Uri.parse('http://localhost:8000/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'uid': uid,
+          'message': userMessage,
+        }),
+      );
 
       if (response.statusCode == 200) {
         final responseBody = response.body;

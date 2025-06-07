@@ -228,7 +228,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.smart_toy, color: Colors.white, size: 30),
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => Chatbot()),
+                  MaterialPageRoute(builder: (context) => WeatherChatbot()),
                 );
               },
             ),
@@ -259,7 +259,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       routes: {
-        '/chatbot': (context) => const Chatbot(),
+        '/chatbot': (context) => const WeatherChatbot(),
       },
     );
   }

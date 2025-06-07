@@ -225,7 +225,7 @@ class _HomePageState extends State<HomePage> {
           actions: [
             // Nút chatbot
             IconButton(
-              icon: Icon(Icons.smart_toy, color: Colors.white, size: 30),
+              icon: Icon(Icons.chat, color: Colors.white, size: 30),
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (context) => Chatbot()),

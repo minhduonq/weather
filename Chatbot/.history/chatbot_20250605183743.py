@@ -31,9 +31,8 @@ def get_db_connection():
         connection = mysql.connector.connect(
             host='localhost',
             user='root',
-            password='',
-            database='weather',
-            port = 3307 ,
+            password='1122',
+            database='weather'
         )
         return connection
     except Error as e:
@@ -327,11 +326,4 @@ class MessageRequest(BaseModel):
 
 @app.post("/chat")
 async def chat_endpoint(message: MessageRequest):
-    async def generate_response():
-        async for token in chat(message.uid, message.message):
-            yield token.encode('utf-8').decode('utf-8')
-    
-    return StreamingResponse(
-        generate_response(),
-        media_type="text/plain; charset=utf-8"  
-    )
+    return StreamingResponse(chat(message.uid, message.message))

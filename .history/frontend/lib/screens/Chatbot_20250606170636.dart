@@ -3,14 +3,15 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 
-class Chatbot extends StatefulWidget {
-  const Chatbot({super.key});
+class WeatherChatbot extends StatefulWidget {
+  const WeatherChatbot({super.key});
 
   @override
-  State<Chatbot> createState() => _ChatbotState();
+  State<WeatherChatbot> createState() => _WeatherChatbotState();
 }
 
-class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
+class _WeatherChatbotState extends State<WeatherChatbot>
+    with TickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
@@ -28,8 +29,7 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
 
     // Add welcome message
     _messages.add(ChatMessage(
-      text:
-          "Xin chào! Tôi là trợ lý thời tiết AI. Tôi có thể giúp bạn kiểm tra thời tiết hiện tại, dự báo hàng giờ/hàng ngày và đưa ra gợi ý trang phục phù hợp. Bạn muốn biết thời tiết ở đâu?",
+      text: "Xin chào! Tôi là trợ lý thời tiết AI. Tôi có thể giúp bạn kiểm tra thời tiết hiện tại, dự báo hàng giờ/hàng ngày và đưa ra gợi ý trang phục phù hợp. Bạn muốn biết thời tiết ở đâu?",
       isUser: false,
       timestamp: DateTime.now(),
     ));
@@ -62,24 +62,21 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
     _scrollToBottom();
 
     try {
-      final uid =
-          'user_${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}';
-
-      final response = await http
-          .post(
-            Uri.parse('http://localhost:8000/chat'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'uid': uid,
-              'message': userMessage,
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
+      final uid = 'user_${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}';
+      
+      final response = await http.post(
+        Uri.parse('http://localhost:8000/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'uid': uid,
+          'message': userMessage,
+        }),
+      );
 
       if (response.statusCode == 200) {
         final responseBody = response.body;
         String accumulatedText = '';
-
+        
         final chunks = responseBody.split('');
         for (int i = 0; i < chunks.length; i++) {
           if (mounted) {
@@ -175,8 +172,7 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
               ),
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8), // Giảm padding
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Giảm padding
                   child: Row(
                     children: [
                       IconButton(
@@ -196,7 +192,7 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
                       ),
                       const SizedBox(width: 4),
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(8), 
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
                             colors: [Color(0xFF0EA5E9), Color(0xFF2563EB)],
@@ -218,7 +214,7 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
                             Text(
                               'Weather Assistant',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 18, 
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF1F2937),
                               ),
@@ -226,7 +222,7 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
                             Text(
                               'Trợ lý thời tiết AI thông minh',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12, 
                                 color: Color(0xFF6B7280),
                               ),
                             ),
@@ -239,11 +235,11 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
               ),
             ),
 
+        
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8), // Giảm padding
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Giảm padding
                 itemCount: _messages.length + (_isLoading ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == _messages.length) {
@@ -267,14 +263,13 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
               ),
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8), // Giảm padding
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Giảm padding
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (!_isLoading) ...[
                         SizedBox(
-                          height: 32,
+                          height: 32, 
                           child: ListView(
                             scrollDirection: Axis.horizontal,
                             children: [
@@ -295,19 +290,16 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
                                         ),
                                         onPressed: () =>
                                             _onQuickSuggestion(suggestion),
-                                        backgroundColor:
-                                            const Color(0xFFE0F2FE),
+                                        backgroundColor: const Color(0xFFE0F2FE),
                                         side: BorderSide.none,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8),
-                                        materialTapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
+                                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                       ),
                                     ))
                                 .toList(),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 8), 
                       ],
 
                       // Input Row
@@ -317,7 +309,7 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF9FAFB),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(20), 
                                 border: Border.all(
                                   color: const Color(0xFFE5E7EB),
                                 ),
@@ -332,8 +324,8 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
                                   ),
                                   border: InputBorder.none,
                                   contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
+                                    horizontal: 16, 
+                                    vertical: 10,   
                                   ),
                                   suffixIcon: Icon(
                                     Icons.wb_sunny_outlined,
@@ -360,8 +352,7 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
                               borderRadius: BorderRadius.circular(22),
                               boxShadow: [
                                 BoxShadow(
-                                  color:
-                                      const Color(0xFF0EA5E9).withOpacity(0.3),
+                                  color: const Color(0xFF0EA5E9).withOpacity(0.3),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -379,9 +370,7 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
                                           height: 20,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                    Colors.white),
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                           ),
                                         )
                                       : const Icon(
@@ -408,12 +397,12 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
 
   Widget _buildStreamingMessage() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 12), 
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
+            width: 32, 
             height: 32,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -427,10 +416,10 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
               size: 16,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 8), 
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12), 
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -467,19 +456,13 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
                             mainAxisSize: MainAxisSize.min,
                             children: List.generate(3, (index) {
                               final delay = index * 0.3;
-                              final opacity =
-                                  ((_typingAnimationController.value + delay) %
-                                              1.0 >
-                                          0.5)
-                                      ? 1.0
-                                      : 0.3;
+                              final opacity = ((_typingAnimationController.value + delay) % 1.0 > 0.5) ? 1.0 : 0.3;
                               return Container(
                                 margin: const EdgeInsets.only(right: 3),
                                 width: 6,
                                 height: 6,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0EA5E9)
-                                      .withOpacity(opacity),
+                                  color: const Color(0xFF0EA5E9).withOpacity(opacity),
                                   borderRadius: BorderRadius.circular(3),
                                 ),
                               );
@@ -524,7 +507,7 @@ class ChatMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 12), 
       child: Row(
         mainAxisAlignment:
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -532,7 +515,7 @@ class ChatMessage extends StatelessWidget {
         children: [
           if (!isUser) ...[
             Container(
-              width: 32,
+              width: 32, 
               height: 32,
               decoration: BoxDecoration(
                 gradient: isError
@@ -550,11 +533,11 @@ class ChatMessage extends StatelessWidget {
                 size: 16,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 8), 
           ],
           Flexible(
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12), 
               decoration: BoxDecoration(
                 gradient: isUser
                     ? const LinearGradient(
@@ -598,7 +581,7 @@ class ChatMessage extends StatelessWidget {
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 6), 
                   Text(
                     _formatTime(timestamp),
                     style: TextStyle(
@@ -613,9 +596,9 @@ class ChatMessage extends StatelessWidget {
             ),
           ),
           if (isUser) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: 8), /
             Container(
-              width: 32,
+              width: 32, 
               height: 32,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(

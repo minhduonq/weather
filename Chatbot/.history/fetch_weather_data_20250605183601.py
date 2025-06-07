@@ -12,9 +12,8 @@ def get_db_connection():
         connection = mysql.connector.connect(
             host='localhost',
             user='root',
-            password='',
-            database='weather',
-            port = 3307 ,
+            password='1122',
+            database='weather'
         )
         return connection
     except Error as e:

@@ -10,6 +10,9 @@ def create_weather_database():
             password='',
             database='weather',
             port = 3307 ,
+            charset='utf8mb4',  
+            collation='utf8mb4_unicode_ci',
+            use_unicode=True
         )
         
         if connection.is_connected():

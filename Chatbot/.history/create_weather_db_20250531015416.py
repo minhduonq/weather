@@ -7,9 +7,8 @@ def create_weather_database():
         connection = mysql.connector.connect(
             host='localhost',
             user='root',
-            password='',
-            database='weather',
-            port = 3307 ,
+            password=''
+            port = 3307
         )
         
         if connection.is_connected():
