@@ -21,7 +21,8 @@ class SearchPlace extends StatefulWidget {
   _SearchPlaceState createState() => _SearchPlaceState();
 }
 
-class _SearchPlaceState extends State<SearchPlace> with SingleTickerProviderStateMixin {
+class _SearchPlaceState extends State<SearchPlace>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<String> _places = [];
@@ -36,12 +37,12 @@ class _SearchPlaceState extends State<SearchPlace> with SingleTickerProviderStat
     super.initState();
     _speech = stt.SpeechToText();
     _initializeSpeech();
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    
+
     _animation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(
         parent: _animationController,
@@ -146,7 +147,7 @@ class _SearchPlaceState extends State<SearchPlace> with SingleTickerProviderStat
       try {
         setState(() => _isListening = true);
         _animationController.repeat(reverse: true);
-        
+
         await _speech.listen(
           onResult: (result) {
             if (result.finalResult) {
@@ -205,7 +206,8 @@ class _SearchPlaceState extends State<SearchPlace> with SingleTickerProviderStat
                 children: [
                   Expanded(
                     child: Container(
-                      margin: EdgeInsets.only(top: 20, bottom: 10, left: 16, right: 16),
+                      margin: EdgeInsets.only(
+                          top: 20, bottom: 10, left: 16, right: 16),
                       padding: EdgeInsets.symmetric(horizontal: 15),
                       decoration: BoxDecoration(
                         color: Colors.grey[300],

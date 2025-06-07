@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/screens/manage_location.dart';
+import 'package:frontend/screens/manage_notification.dart';
 
 void showCustomModal(BuildContext context) {
   showDialog(
@@ -29,22 +29,14 @@ void showCustomModal(BuildContext context) {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    title: Text('Edit List'),
-                    trailing: Icon(Icons.edit, size: 20),
+                    title: Text('Notifications'),
+                    trailing: Icon(Icons.notifications_none, size: 20),
                     onTap: () {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ManageLocationsScreen(),
+                            builder: (context) => ManageNotification(),
                           ));
-                    },
-                  ),
-                  Divider(height: 1),
-                  ListTile(
-                    title: Text('Notifications'),
-                    trailing: Icon(Icons.notifications_none, size: 20),
-                    onTap: () {
-                      Navigator.pop(context);
                     },
                   ),
                 ],

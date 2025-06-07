@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/helpTrans.dart';
+
+import 'manage_notification.dart'; // Import màn hình ManageNotification
+
 import '../services/constants.dart';
 
 class Setting extends StatefulWidget {
@@ -139,7 +142,19 @@ class _SettingsPageState extends State<Setting> {
                     fontWeight: FontWeight.w500,
                     letterSpacing: 1),
               ),
-              onTap: () {},
+              subtitle: Text(
+                'configure_notification'.tr, // Thêm mô tả
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue,
+                ),
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ManageNotification()),
+                );
+              },
             ),
           ]),
           const SizedBox(height: 18),
