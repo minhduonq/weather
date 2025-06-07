@@ -34,6 +34,9 @@ def get_db_connection():
             password='',
             database='weather',
             port = 3307 ,
+            charset='utf8mb4',  
+            collation='utf8mb4_unicode_ci',
+            use_unicode=True
         )
         return connection
     except Error as e:

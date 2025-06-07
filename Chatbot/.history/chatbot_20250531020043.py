@@ -33,7 +33,7 @@ def get_db_connection():
             user='root',
             password='',
             database='weather',
-            port = 3307 ,
+            port = 3307
         )
         return connection
     except Error as e:
@@ -48,14 +48,14 @@ async def get_latitute_longtitue(ctx, location: str) -> tuple[float, float]:
     if connection:
         try:
             cursor = connection.cursor()
-            # First check if location exists in location table (case-insensitive)
-            cursor.execute("SELECT latitude, longitude FROM location WHERE LOWER(name) = LOWER(%s)", (location,))
+            # First check if location exists in location table
+            cursor.execute("SELECT latitude, longitude FROM location WHERE name = %s", (location,))
             result = cursor.fetchone()
             if result:
                 return result
             
-            # If not found in location table, check search_history (case-insensitive)
-            cursor.execute("SELECT lat, lon FROM search_history WHERE LOWER(location) = LOWER(%s) ORDER BY searched_at DESC LIMIT 1", (location,))
+            # If not found in location table, check search_history
+            cursor.execute("SELECT lat, lon FROM search_history WHERE location = %s ORDER BY searched_at DESC LIMIT 1", (location,))
             result = cursor.fetchone()
             if result:
                 return result
@@ -138,7 +138,7 @@ async def get_hourly_forecast(ctx, latitude: float, longtitude: float):
                 
                 if forecast:
                     return [{
-                        'time': datetime.fromtimestamp(item['time']).strftime('%H:%M:%S'),
+                        'time': item['time'],
                         'temperature_max': item['temperatureMax'],
                         'temperature_min': item['temperatureMin'],
                         'humidity': item['humidity'],
@@ -179,7 +179,7 @@ async def get_daily_forecast(ctx, latitude: float, longtitude: float):
                 
                 if forecast:
                     return [{
-                        'time': datetime.fromtimestamp(item['time']).strftime('%d/%m/%Y'),
+                        'time': item['time'],
                         'temperature_max': item['temperatureMax'],
                         'temperature_min': item['temperatureMin'],
                         'humidity': item['humidity'],
@@ -194,120 +194,6 @@ async def get_daily_forecast(ctx, latitude: float, longtitude: float):
             cursor.close()
             connection.close()
     return None
-
-@agent.tool
-async def recommend_outfit(ctx, latitude: float, longtitude: float):
-    """Analyze weather data and recommend appropriate clothing and accessories"""
-    print(f"Getting recommendations for coordinates: {latitude}, {longtitude}")
-    
-    # Get all weather data
-    current_weather = await get_current_weather(ctx, latitude, longtitude)
-    hourly_forecast = await get_hourly_forecast(ctx, latitude, longtitude)
-    daily_forecast = await get_daily_forecast(ctx, latitude, longtitude)
-    
-    if not current_weather:
-        return "Không thể lấy thông tin thời tiết hiện tại."
-    
-    recommendations = {
-        "clothing": [],
-        "accessories": [],
-        "activities": [],
-        "precautions": []
-    }
-    
-    # Analyze current temperature
-    temp = current_weather['temperature']
-    if temp < 10:
-        recommendations["clothing"].extend([
-            "Áo khoác dày hoặc áo len",
-            "Quần dài",
-            "Giày kín",
-            "Găng tay",
-            "Khăn quàng cổ"
-        ])
-        recommendations["precautions"].append("Cần mặc ấm để tránh cảm lạnh")
-    elif temp < 20:
-        recommendations["clothing"].extend([
-            "Áo khoác mỏng hoặc áo len nhẹ",
-            "Quần dài",
-            "Giày kín"
-        ])
-    elif temp < 25:
-        recommendations["clothing"].extend([
-            "Áo dài tay mỏng",
-            "Quần dài",
-            "Giày thể thao"
-        ])
-    else:
-        recommendations["clothing"].extend([
-            "Áo ngắn tay",
-            "Quần ngắn",
-            "Giày sandal hoặc dép"
-        ])
-    
-    # Analyze weather conditions
-    weather_main = current_weather['main'].lower()
-    if 'rain' in weather_main:
-        recommendations["accessories"].extend([
-            "Áo mưa",
-            "Ô",
-            "Giày không thấm nước"
-        ])
-        recommendations["precautions"].append("Mang theo ô hoặc áo mưa")
-    elif 'snow' in weather_main:
-        recommendations["accessories"].extend([
-            "Giày chống trơn",
-            "Găng tay chống nước"
-        ])
-        recommendations["precautions"].append("Cẩn thận đường trơn")
-    elif 'clear' in weather_main or 'sun' in weather_main:
-        recommendations["accessories"].extend([
-            "Kính râm",
-            "Mũ",
-            "Kem chống nắng"
-        ])
-        recommendations["precautions"].append("Bảo vệ da khỏi tia UV")
-    
-    # Analyze humidity
-    humidity = current_weather['humidity']
-    if humidity > 80:
-        recommendations["precautions"].append("Độ ẩm cao, nên mặc quần áo thoáng mát")
-    elif humidity < 30:
-        recommendations["precautions"].append("Độ ẩm thấp, nên uống nhiều nước")
-    
-    # Analyze wind speed
-    wind_speed = current_weather['wind_speed']
-    if wind_speed > 20:
-        recommendations["accessories"].append("Mũ chống gió")
-        recommendations["precautions"].append("Gió mạnh, cẩn thận khi di chuyển")
-    
-    # Suggest activities based on weather
-    if 'clear' in weather_main or 'sun' in weather_main:
-        if 20 <= temp <= 28:
-            recommendations["activities"].extend([
-                "Dã ngoại",
-                "Đi bộ",
-                "Chơi thể thao ngoài trời"
-            ])
-    elif 'rain' in weather_main:
-        recommendations["activities"].extend([
-            "Hoạt động trong nhà",
-            "Xem phim",
-            "Đọc sách"
-        ])
-    
-    # Format recommendations
-    response = {
-        "current_weather": {
-            "temperature": temp,
-            "description": current_weather['description'],
-            "humidity": humidity,
-            "wind_speed": wind_speed
-        },
-        "recommendations": recommendations
-    }
-    
-    return response
 
 conversations_history: dict[str, list[ModelMessage]] = {}
 
@@ -327,11 +213,4 @@ class MessageRequest(BaseModel):
 
 @app.post("/chat")
 async def chat_endpoint(message: MessageRequest):
-    async def generate_response():
-        async for token in chat(message.uid, message.message):
-            yield token.encode('utf-8').decode('utf-8')
-    
-    return StreamingResponse(
-        generate_response(),
-        media_type="text/plain; charset=utf-8"  
-    )
+    return StreamingResponse(chat(message.uid, message.message))

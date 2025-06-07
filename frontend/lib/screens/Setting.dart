@@ -56,10 +56,10 @@ class _SettingsPageState extends State<Setting> {
           'settings'.tr,
           style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
         ),
-        backgroundColor: Colors.grey.shade300,
+        backgroundColor: Colors.white,
         elevation: 0,
       ),
-      backgroundColor: Colors.grey.shade300,
+      backgroundColor: Colors.white,
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
         children: [
@@ -206,6 +206,7 @@ class _SettingsPageState extends State<Setting> {
 
   Widget _buildCard(List<Widget> children) {
     return Card(
+      color: Colors.grey.shade200,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 2,
       child: Column(

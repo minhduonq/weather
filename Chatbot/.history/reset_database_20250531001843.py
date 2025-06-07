@@ -1,38 +1,51 @@
 import mysql.connector
 from mysql.connector import Error
+import os
+from dotenv import load_dotenv
 
-def create_weather_database():
+def reset_database():
     try:
-        # Connect to MySQL server using settings from db.js
+        # Load environment variables from .env file
+        load_dotenv()
+        
+        # Get API key from environment variable
+        api_key = os.getenv('OPENWEATHER_API_KEY')
+        if not api_key:
+            print("Warning: OPENWEATHER_API_KEY not found in environment variables")
+        
+        # Connect to MySQL server
         connection = mysql.connector.connect(
             host='localhost',
             user='root',
-            password='',
-            database='weather',
-            port = 3307 ,
+            password='1122'
         )
         
         if connection.is_connected():
             cursor = connection.cursor()
             
-            # Create database if not exists
+            # Drop database if exists
             cursor.execute("DROP DATABASE IF EXISTS weather")
+            print("Dropped existing weather database")
+            
+            # Create database
             cursor.execute("CREATE DATABASE weather")
             cursor.execute("USE weather")
+            print("Created new weather database")
             
             # Create location table
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS location(
-                id INT AUTO_INCREMENT PRIMARY KEY,
+            CREATE TABLE location(
+                id INT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
-                latitude DOUBLE,
-                longitude DOUBLE
+                latitude DOUBLE NOT NULL,
+                longitude DOUBLE NOT NULL
             );
             ''')
+            print("Created location table")
             
             # Create weather_data table
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS weather_data(
+            CREATE TABLE weather_data(
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 location_id INT NOT NULL,
                 temperature DOUBLE,
@@ -56,10 +69,11 @@ def create_weather_database():
                 FOREIGN KEY (location_id) REFERENCES location(id) ON DELETE CASCADE
             );
             ''')
+            print("Created weather_data table")
             
             # Create hourly_data table
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS hourly_data(
+            CREATE TABLE hourly_data(
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 location_id INT NOT NULL,
                 time INT,
@@ -70,10 +84,11 @@ def create_weather_database():
                 FOREIGN KEY (location_id) REFERENCES location(id) ON DELETE CASCADE
             );
             ''')
+            print("Created hourly_data table")
             
             # Create daily_data table
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS daily_data(
+            CREATE TABLE daily_data(
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 location_id INT NOT NULL,
                 time INT,
@@ -84,53 +99,84 @@ def create_weather_database():
                 FOREIGN KEY (location_id) REFERENCES location(id) ON DELETE CASCADE
             );
             ''')
+            print("Created daily_data table")
             
             # Create setting table
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS setting(
+            CREATE TABLE setting(
                 unit VARCHAR(50) NOT NULL,
                 theme VARCHAR(50) NOT NULL,
                 language VARCHAR(50) NOT NULL,
                 notification_enabled TINYINT NOT NULL
             );
             ''')
+            print("Created setting table")
             
             # Create search_history table
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS search_history(
+            CREATE TABLE search_history(
                 location VARCHAR(255) NOT NULL,
                 searched_at VARCHAR(255) NOT NULL,
                 lat DOUBLE NOT NULL,
                 lon DOUBLE NOT NULL
             );
             ''')
+            print("Created search_history table")
+            
+            # Create api_keys table
+            cursor.execute('''
+            CREATE TABLE api_keys(
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                service_name VARCHAR(50) NOT NULL,
+                api_key VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            );
+            ''')
+            print("Created api_keys table")
+            
+            # Create chat_history table
+            cursor.execute('''
+            CREATE TABLE chat_history(
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                conversation_id VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
+                response TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                location_id INT,
+                weather_data_id INT,
+                FOREIGN KEY (location_id) REFERENCES location(id) ON DELETE SET NULL,
+                FOREIGN KEY (weather_data_id) REFERENCES weather_data(id) ON DELETE SET NULL
+            );
+            ''')
+            print("Created chat_history table")
             
             # Insert default settings
             cursor.execute('''
             INSERT INTO setting (unit, theme, language, notification_enabled)
             VALUES ('metric', 'light', 'en', 1);
             ''')
+            print("Inserted default settings")
             
             # Insert sample location
             cursor.execute('''
-                INSERT INTO location (name)
-                VALUES 
-                    ('Ho Chi Minh City'),
-                    ('Ha Noi'),
-                    ('Da Nang'),
-                    ('New York'),
-                    ('London'),
-                    ('Paris'),
-                    ('Tokyo'),
-                    ('Sydney'),
-                    ('Moscow'),
-                    ('Berlin')
+            INSERT INTO location (id, name, latitude, longitude)
+            VALUES (1, 'Ho Chi Minh City', 10.7756587, 106.7004238);
             ''')
-
+            print("Inserted sample location")
+            
+            # Insert OpenWeather API key if available
+            if api_key:
+                cursor.execute('''
+                INSERT INTO api_keys (service_name, api_key)
+                VALUES ('openweather', %s)
+                ON DUPLICATE KEY UPDATE api_key = VALUES(api_key);
+                ''', (api_key,))
+                print("OpenWeather API key has been stored in the database")
             
             # Commit changes
             connection.commit()
-            print("Database 'weather' created successfully with all tables!")
+            print("Database reset completed successfully!")
             
     except Error as e:
         print(f"Error: {e}")
@@ -142,4 +188,4 @@ def create_weather_database():
             print("MySQL connection is closed")
 
 if __name__ == "__main__":
-    create_weather_database() 
+    reset_database() 

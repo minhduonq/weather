@@ -14,7 +14,7 @@ def get_db_connection():
             user='root',
             password='',
             database='weather',
-            port = 3307 ,
+            port = 3307
         )
         return connection
     except Error as e:

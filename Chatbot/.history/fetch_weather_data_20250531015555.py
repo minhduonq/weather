@@ -13,8 +13,8 @@ def get_db_connection():
             host='localhost',
             user='root',
             password='',
-            database='weather',
-            port = 3307 ,
+            database='weather'
+            
         )
         return connection
     except Error as e:

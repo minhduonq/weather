@@ -3,14 +3,15 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 
-class Chatbot extends StatefulWidget {
-  const Chatbot({super.key});
+class WeatherChatbot extends StatefulWidget {
+  const WeatherChatbot({super.key});
 
   @override
-  State<Chatbot> createState() => _ChatbotState();
+  State<WeatherChatbot> createState() => _WeatherChatbotState();
 }
 
-class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
+class _WeatherChatbotState extends State<WeatherChatbot>
+    with TickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
@@ -65,16 +66,14 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
       final uid =
           'user_${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}';
 
-      final response = await http
-          .post(
-            Uri.parse('http://localhost:8000/chat'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'uid': uid,
-              'message': userMessage,
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await http.post(
+        Uri.parse('http://localhost:8000/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'uid': uid,
+          'message': userMessage,
+        }),
+      );
 
       if (response.statusCode == 200) {
         final responseBody = response.body;

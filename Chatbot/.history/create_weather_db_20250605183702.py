@@ -9,7 +9,7 @@ def create_weather_database():
             user='root',
             password='',
             database='weather',
-            port = 3307 ,
+            port = 3307
         )
         
         if connection.is_connected():

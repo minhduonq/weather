@@ -67,7 +67,7 @@ class _ChatbotState extends State<Chatbot> with TickerProviderStateMixin {
 
       final response = await http
           .post(
-            Uri.parse('http://localhost:8000/chat'),
+            Uri.parse('http://192.168.1.245:8000/chat'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'uid': uid,
