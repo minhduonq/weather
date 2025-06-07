@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Frontend</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>frontend</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Ứng dụng cần truy cập mạng cục bộ để kết nối thiết bị.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Ứng dụng cần quyền truy cập vị trí của bạn khi đang sử dụng ứng dụng.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Ứng dụng cần quyền truy cập vị trí của bạn bất cứ lúc nào.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Ứng dụng cần quyền truy cập microphone để nhận diện giọng nói.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Ứng dụng cần nhận diện giọng nói để hỗ trợ tìm kiếm bằng mic.</string>
+<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.0</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+			</dict>
+			<!-- Thêm domain/IP của server FastAPI nếu không phải localhost -->
+			<!-- Ví dụ: nếu server chạy trên IP 192.168.1.100 -->
+			<!--
+			<key>192.168.1.100</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.0</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+			</dict>
+			-->
+		</dict>
+	</dict>
+	
+	<!-- Thêm quyền truy cập internet -->
+	<key>NSCameraUsageDescription</key>
+	<string>Ứng dụng cần quyền truy cập camera để chụp ảnh.</string>
+</dict>
+</plist>

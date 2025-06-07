@@ -68,7 +68,25 @@
 	<string>Ứng dụng cần quyền truy cập microphone để nhận diện giọng nói.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Ứng dụng cần nhận diện giọng nói để hỗ trợ tìm kiếm bằng mic.</string>
-
-
+<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsArbitraryLoads</key>
+			<true/>
+			<key>NSExceptionDomains</key>
+			<dict>
+				<key>localhost</key>
+				<dict>
+					<key>NSExceptionAllowsInsecureHTTPLoads</key>
+					<true/>
+					<key>NSExceptionMinimumTLSVersion</key>
+					<string>TLSv1.0</string>
+					<key>NSExceptionRequiresForwardSecrecy</key>
+					<false/>
+				</dict>
+			</dict>
+		</dict>
+		
+	<key>NSCameraUsageDescription</key>
+	<string>Ứng dụng cần quyền truy cập camera để chụp ảnh.</string>
 </dict>
 </plist>

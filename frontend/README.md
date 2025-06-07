@@ -1,6 +1,40 @@
-# frontend
-## What's happening?
-Added SQLite to db, so now data will be saved on db and we will work with data on DB.<br>
-Page should be saved on <code>screens</code> folder, other can be saved on services folder.<br>
-to run program, install library on pubspec.yaml file first and then you can run the program.
+# Frontend
+## Chức năng đã thêm:
+- Widget thời tiết (1 cái)
+- Update danh sách địa điểm ở HomePage khi đã thay đổi
+- Fix lỗi Pixel overflow
+## Bugs:
+- Widget: Không hiển thị icon thời tiết
 
+## Code khác cần chú ý
+Thêm đoạn code này vào hàm thay đổi nhiệt độ C/F trong màn hình cài đặt
+
+```
+
+// Thêm vào khi người dùng thay đổi cài đặt đơn vị nhiệt độ
+void _changeTemperatureUnit(String newUnit) {
+  // ...existing code...
+  
+  // Cập nhật lại widget khi đổi đơn vị
+  WidgetService.updateWidgetData();
+}
+
+```
+Phần này để tự động update trang HomePage khi thay đổi danh sách địa điểm
+```
+// Trong ManageLocationsScreen khi xóa địa điểm
+void deleteLocation(int id) async {
+  await DatabaseHelper().deleteLocation(id);
+  
+  // Làm mới danh sách địa điểm trong controller
+  await Get.find<LocationController>().loadLocations(currentPosition, InitialName);
+}
+
+// Trong SearchPlace khi thêm địa điểm mới
+void addLocation(Map<String, dynamic> location) async {
+  await DatabaseHelper().insertLocation(location);
+  
+  // Làm mới danh sách địa điểm trong controller
+  await Get.find<LocationController>().loadLocations(currentPosition, InitialName);
+}
+```

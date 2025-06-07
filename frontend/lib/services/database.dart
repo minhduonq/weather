@@ -162,6 +162,46 @@ class DatabaseHelper {
     }
   }
 
+  Future<void> saveCurrentLocation(
+      double latitude, double longitude, String name) async {
+    final db = await database;
+
+    // First, reset all locations to not be current
+    await db.update('location', {'is_current': 0},
+        where: 'is_current = ?', whereArgs: [1]);
+
+    // Check if a location with these coordinates already exists
+    List<Map<String, dynamic>> existingLocations = await db.query('location',
+        where: 'latitude = ? AND longitude = ?',
+        whereArgs: [latitude, longitude]);
+
+    if (existingLocations.isNotEmpty) {
+      // Update existing location to be current
+      await db.update('location', {'is_current': 1, 'name': name},
+          where: 'id = ?', whereArgs: [existingLocations.first['id']]);
+      return;
+    }
+
+    // Insert new location as current
+    await db.insert('location', {
+      'name': name,
+      'latitude': latitude,
+      'longitude': longitude,
+      'is_current': 1
+    });
+  }
+
+  Future<Map<String, dynamic>?> getCurrentLocation() async {
+    final db = await database;
+    final results = await db.query('location',
+        where: 'is_current = ?', whereArgs: [1], limit: 1);
+
+    if (results.isNotEmpty) {
+      return results.first;
+    }
+    return null;
+  }
+
   Future<int> insertWeatherData(Map<String, dynamic> weatherData) async {
     final db = await database;
     return await db.insert(
@@ -282,6 +322,7 @@ class DatabaseHelper {
     );
   }
 
+
   Future<List<Map<String, dynamic>>> getWeatherDataByLocationId(
       int locationId) async {
     final db = await database;
@@ -294,6 +335,7 @@ class DatabaseHelper {
     );
   }
 
+
   Future<List<Map<String, dynamic>>> getHourlyDataByLocationId(
       int locationId) async {
     final db = await database;
@@ -304,6 +346,7 @@ class DatabaseHelper {
       orderBy: 'time ASC',
     );
   }
+
 
   Future<List<Map<String, dynamic>>> getDailyDataByLocationId(
       int locationId) async {
