@@ -8,6 +8,15 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
         #map {
             height: 100vh;
             /* Full viewport height */
@@ -17,37 +26,71 @@
 </head>
 
 <body>
-<div id="map"></div>
+    <div id="map"></div>
 
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    // Khởi tạo bản đồ với vị trí mặc định (London)
-    const map = L.map('map').setView([51.5, -0.09], 5);
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Khởi tạo biến toàn cục cho marker
+        let currentMarker = null;
 
-    // Thêm layer OpenStreetMap
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 18,
-    }).addTo(map);
+        // Khởi tạo bản đồ với vị trí mặc định (London)
+        const map = L.map('map').setView([51.5, -0.09], 5);
 
-    // API key OpenWeatherMap (cần thay bằng API key hợp lệ của bạn)
-    const apiKey = 'Y2b5630205440fa5d9747bc910681e783'; // Thay thế bằng API key thực của bạn
+        // Thêm layer OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18,
+        }).addTo(map);
 
-    // Thêm lớp bản đồ nhiệt độ từ OpenWeatherMap
-    const weatherLayer = L.tileLayer(
-        `https://maps.openweathermap.org/maps/2.0/weather/TA2/{z}/{x}/{y}?appid=2b5630205440fa5d9747bc910681e783&fill_bound=true&opacity=0.6&palette=-65:821692;-55:821692;-45:821692;-40:821692;-30:8257db;-20:208cec;-10:20c4e8;0:23dddd;10:c2ff28;20:fff028;25:ffc228;30:fc8014`,
-        {
-            opacity: 0.5,
-            attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>',
+        // API key OpenWeatherMap
+        const apiKey = '2b5630205440fa5d9747bc910681e783';
+
+        // Thêm lớp bản đồ nhiệt độ từ OpenWeatherMap
+        const weatherLayer = L.tileLayer(
+            `https://maps.openweathermap.org/maps/2.0/weather/TA2/{z}/{x}/{y}?appid=${apiKey}&fill_bound=true&opacity=0.6&palette=-65:821692;-55:821692;-45:821692;-40:821692;-30:8257db;-20:208cec;-10:20c4e8;0:23dddd;10:c2ff28;20:fff028;25:ffc228;30:fc8014`,
+            {
+                opacity: 0.5,
+                attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>',
+            }
+        ).addTo(map);
+
+        // Hàm để cập nhật vị trí bản đồ
+        function updateMap(lat, lon) {
+            if (lat && lon) {
+                console.log(`Updating map to coordinates: ${lat}, ${lon}`);
+
+                // Cập nhật vị trí và mức zoom
+                map.setView([lat, lon], 10);
+
+                // Xóa marker cũ nếu có
+                if (currentMarker) {
+                    map.removeLayer(currentMarker);
+                }
+
+                // Thêm marker mới tại vị trí hiện tại
+                // currentMarker = L.marker([lat, lon])
+                //     .addTo(map)
+                //     .bindPopup('Vị trí hiện tại')
+                //     .openPopup();
+
+                return true;
+            } else {
+                console.error("Invalid coordinates provided to updateMap function");
+                return false;
+            }
         }
-    ).addTo(map);
 
-    // Hàm để cập nhật vị trí bản đồ
-    function updateMap(lat, lon) {
-        map.setView([lat, lon], 10); // Cập nhật vị trí và mức zoom
-    }
-</script>
+        // Hàm kiểm tra xem Flutter đã gọi updateMap chưa
+        function checkFlutterCall() {
+            console.log("Map is ready for Flutter to call updateMap()");
+        }
+
+        // Chạy ngay khi trang tải xong
+        document.addEventListener('DOMContentLoaded', function () {
+            checkFlutterCall();
+        });
+    </script>
 </body>
 
 </html>

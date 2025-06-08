@@ -49,46 +49,45 @@ class LocationService {
         permission == LocationPermission.always;
   }
 
-  // Get current location
   static Future<Position?> getCurrentLocation() async {
-    // Nếu đang chạy trên máy ảo và ở chế độ debug, trả về vị trí mặc định
-    if (kDebugMode) {
-      print('Debug mode: Using default location (Ho Chi Minh City)');
-      return getDefaultPosition();
-    }
+    // Remove this auto-default in debug mode
+    // if (kDebugMode) {
+    //   print('Debug mode: Using default location (Ho Chi Minh City)');
+    //   return getDefaultPosition();
+    // }
 
     try {
-      // Thêm timeout để không phải chờ quá lâu
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Location services are disabled');
+      }
+
+      // Check for permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Location permission denied');
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception('Location permission permanently denied');
+      }
+
+      // Get position with a reasonable timeout
       Position? position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: Duration(seconds: 5),
+        timeLimit: Duration(seconds: 10),
       );
+
+      print(
+          'Successfully got current position: ${position.latitude}, ${position.longitude}');
       return position;
     } catch (e) {
       print('Error getting current location: $e');
-      // Nếu có lỗi, trả về vị trí mặc định
-      print('Falling back to default location');
-      return getDefaultPosition();
-    }
-  }
-  // Get current location and save to database
-  static Future<Position?> getCurrentLocationAndSave() async {
-    try {
-      final position = await Geolocator.getCurrentPosition();
-      if (position != null) {
-        final dbHelper = DatabaseHelper();
-        // Get location name first (using your existing getLocationName function)
-        await WeatherService.getLocationName(
-            position.latitude, position.longitude);
-        String locationName = InitialName ?? 'Current Location';
-
-        // Save to database
-        await dbHelper.saveCurrentLocation(
-            position.latitude, position.longitude, locationName);
-      }
-      return position;
-    } catch (e) {
-      print('Error getting and saving current location: $e');
+      // Return null instead of default position
       return null;
     }
   }

@@ -38,11 +38,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Map<String, dynamic> get dailyData => WeatherService.dailyData;
 
   @override
+  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeApp();
+    _initializeApp().then((_) {
+      // Only update the widget after initialization
+      if (WeatherService.currentData.isNotEmpty) {
+        WeatherWidgetService.updateWeatherWidget();
+      }
     });
   }
 
@@ -72,39 +76,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       if (widget.highlightLocationName != null) {
         _setHighlightedLocationIndex();
       } else {
-        if (KeyLocation != null) {
+        if (KeyLocation == null) {
+          // Request current location instead of using a default
+          await _requestLocationAndLoadData();
+        } else {
           await WeatherService.loadWeatherData(
               KeyLocation!.latitude, KeyLocation!.longitude);
           await WeatherService.getLocationName(
               KeyLocation!.latitude, KeyLocation!.longitude);
           _setCurrentLocationIndex();
-        } else {
-          await _requestLocationAndLoadData();
         }
       }
 
-      // Fallback to default location if KeyLocation is null
-      if (KeyLocation == null) {
-        print("Không có vị trí, sử dụng vị trí mặc định.");
-        KeyLocation = Position(
-          latitude: 21.0285,
-          longitude: 105.8542,
-          timestamp: DateTime.now(),
-          accuracy: 0.0,
-          altitude: 0.0,
-          heading: 0.0,
-          speed: 0.0,
-          speedAccuracy: 0.0,
-          altitudeAccuracy: 0.0,
-          headingAccuracy: 0.0,
+      // Only use default location as a last resort if everything else fails
+      if (KeyLocation == null && mounted) {
+        print(
+            "Không thể lấy vị trí hiện tại, hiển thị thông báo cho người dùng");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Không thể lấy vị trí hiện tại. Vui lòng kiểm tra quyền truy cập vị trí.'),
+            action: SnackBarAction(
+              label: 'Thử lại',
+              onPressed: _requestLocationAndLoadData,
+            ),
+          ),
         );
-        await WeatherService.loadWeatherData(
-            KeyLocation!.latitude, KeyLocation!.longitude);
-        await WeatherService.getLocationName(
-            KeyLocation!.latitude, KeyLocation!.longitude);
-        await locationNotifier.setCurrentPosition(
-            KeyLocation!, InitialName ?? 'Hà Nội');
-        _setCurrentLocationIndex();
       }
 
       setState(() {
@@ -114,9 +111,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       print("Lỗi khi khởi tạo ứng dụng: $e");
       setState(() {
         _isLoading = false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi khi tải dữ liệu: $e")),
-        );
       });
     }
   }
@@ -232,32 +226,89 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _requestLocationAndLoadData() async {
     bool hasPermission = await LocationService.requestLocationPermission();
     if (hasPermission) {
-      await _getCurrentLocation();
+      try {
+        // Show loading indicator
+        setState(() {
+          _isLoading = true;
+        });
+
+        // Get current location
+        Position? position = await LocationService.getCurrentLocation();
+
+        // Only proceed if position is not null
+        if (position != null) {
+          KeyLocation = position;
+
+          // Load weather data
+          await WeatherService.loadWeatherData(
+              position.latitude, position.longitude);
+
+          // Get location name
+          await WeatherService.getLocationName(
+              position.latitude, position.longitude);
+
+          // Update database and refresh locations
+          final locationNotifier =
+              Provider.of<LocationNotifier>(context, listen: false);
+          await locationNotifier.setCurrentPosition(
+              position, LocationName ?? 'Current Location');
+
+          // Update widget
+          await WeatherWidgetService.updateWeatherWidget();
+        } else {
+          // Show dialog to user about location issue
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Không thể lấy vị trí hiện tại. Vui lòng kiểm tra quyền truy cập vị trí.'),
+                action: SnackBarAction(
+                  label: 'Thử lại',
+                  onPressed: () => _requestLocationAndLoadData(),
+                ),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        print("Error getting location: $e");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Lỗi khi lấy vị trí: $e")),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     } else {
-      print("Không có quyền truy cập vị trí, sử dụng vị trí mặc định.");
-      setState(() {
-        currentPosition = Position(
-          latitude: 21.0285,
-          longitude: 105.8542,
-          timestamp: DateTime.now(),
-          accuracy: 0.0,
-          altitude: 0.0,
-          heading: 0.0,
-          speed: 0.0,
-          speedAccuracy: 0.0,
-          altitudeAccuracy: 0.0,
-          headingAccuracy: 0.0,
+      // Show permission request dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Quyền truy cập vị trí"),
+            content: Text(
+                "Ứng dụng cần quyền truy cập vị trí để hiển thị thời tiết chính xác cho vị trí của bạn."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Geolocator.openAppSettings();
+                },
+                child: Text("Cài đặt"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text("Đóng"),
+              ),
+            ],
+          ),
         );
-        KeyLocation = currentPosition;
-        _isLoading = false;
-      });
-      await WeatherService.loadWeatherData(
-          KeyLocation!.latitude, KeyLocation!.longitude);
-      await WeatherService.getLocationName(
-          KeyLocation!.latitude, KeyLocation!.longitude);
-      Provider.of<LocationNotifier>(context, listen: false)
-          .setCurrentPosition(KeyLocation!, LocationName ?? 'Hà Nội');
-      setState(() {});
+      }
     }
   }
 
@@ -331,14 +382,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (locations.isEmpty) return;
 
     final currentLocation = locations[_currentLocationIndex];
-    await WeatherService.fetchWeatherData(
-        currentLocation['latitude'], currentLocation['longitude']);
-    if (!currentLocation['isCurrent']) {
-      await WeatherService.getLocationName(
+    try {
+      // Ensure weather data is fetched
+      await WeatherService.fetchWeatherData(
           currentLocation['latitude'], currentLocation['longitude']);
+
+      if (!currentLocation['isCurrent']) {
+        await WeatherService.getLocationName(
+            currentLocation['latitude'], currentLocation['longitude']);
+      }
+
+      // Only update the widget if we have weather data
+      if (WeatherService.currentData.isNotEmpty &&
+          WeatherService.currentData['weather'] != null) {
+        await WeatherWidgetService.updateWeatherWidget();
+      }
+
+      _updateMap();
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print("Error refreshing data: $e");
+      setState(() {
+        _isLoading = false;
+      });
     }
-    _updateMap();
-    setState(() {});
   }
 
   @override

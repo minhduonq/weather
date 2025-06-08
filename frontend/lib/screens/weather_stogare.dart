@@ -34,19 +34,29 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
     try {
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-      ).timeout(Duration(seconds: 3), onTimeout: () {
-        throw Exception('Likely running on emulator');
+      ).timeout(Duration(seconds: 5), onTimeout: () {
+        throw Exception('Failed to get location within timeout');
       });
+
       print('Running on physical device with position: $position');
       await Provider.of<LocationNotifier>(context, listen: false)
           .setCurrentPosition(
               position,
               await getCityNameFromCoordinates(
                       position.latitude, position.longitude) ??
-                  'Ho Chi Minh City');
+                  'Current Location');
     } catch (e) {
-      print('Likely running on emulator or location not available: $e');
-      await _setupDefaultEmulatorLocation();
+      print('Error getting location: $e');
+      // Show message rather than defaulting
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Vui lòng cấp quyền truy cập vị trí để hiển thị thời tiết chính xác')),
+        );
+        // Optionally open location settings
+        // await Geolocator.openLocationSettings();
+      }
     }
   }
 

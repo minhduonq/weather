@@ -1,80 +1,83 @@
-// import 'package:home_widget/home_widget.dart';
-// //import 'package:workmanager/workmanager.dart';
-// import 'package:frontend/services/database.dart';
-// import '../services/constants.dart';
-//
-// class WidgetService {
-//   static const String widgetUpdateTask = 'weatherWidgetUpdate';
-//
-//   static Future<void> initWidgetService() async {
-//     // Khởi tạo Workmanager để cập nhật widget định kỳ
-//     //Workmanager().initialize(callbackDispatcher);
-//     // Đăng ký công việc định kỳ để cập nhật widget (mỗi 30 phút)
-//     // Workmanager().registerPeriodicTask(
-//     //   widgetUpdateTask,
-//     //   widgetUpdateTask,
-//     //   frequency: Duration(minutes: 30),
-//     // );
-//   }
-//
-//   static Future<void> updateWidgetData() async {
-//     final dbHelper = DatabaseHelper();
-//
-//     // Lấy thông tin vị trí hiện tại
-//     String? location = LocationName;
-//
-//     // Lấy dữ liệu thời tiết hiện tại từ DB hoặc biến toàn cục
-//     if (KeyLocation != null) {
-//       final locations = await dbHelper.getAllLocations();
-//       int? locationId;
-//
-//       for (var loc in locations) {
-//         if (loc['name'] == location) {
-//           locationId = loc['id'];
-//           break;
-//         }
-//       }
-//
-//       if (locationId != null) {
-//         final weatherDataList = await dbHelper.getWeatherDataByLocationId(locationId);
-//
-//         if (weatherDataList.isNotEmpty) {
-//           final weatherData = weatherDataList.first;
-//
-//           // Cập nhật dữ liệu lên widget
-//           await HomeWidget.saveWidgetData('location', location);
-//           await HomeWidget.saveWidgetData(
-//               'temperature', '${weatherData['temperature'].round()}°');
-//           await HomeWidget.saveWidgetData(
-//               'description', capitalizeFirstLetter(weatherData['description']));
-//           await HomeWidget.saveWidgetData('icon', weatherData['icon']);
-//
-//           final now = DateTime.now();
-//           final timeString = '${now.hour}:${now.minute.toString().padLeft(2, '0')}';
-//           await HomeWidget.saveWidgetData('updated', 'Updated: $timeString');
-//
-//           // Yêu cầu cập nhật widget
-//           await HomeWidget.updateWidget(
-//             androidName: 'WeatherWidgetProvider',
-//           );
-//         }
-//       }
-//     }
-//   }
-//
-//   static String capitalizeFirstLetter(String text) {
-//     if (text.isEmpty) return text;
-//     return text[0].toUpperCase() + text.substring(1);
-//   }
-// }
-//
-// // Callback phải ở cấp độ hàng đầu (top-level function)
-// @pragma('vm:entry-point')
-// void callbackDispatcher() {
-//   Workmanager().executeTask((task, inputData) async {
-//     if (task == WidgetService.widgetUpdateTask) {
-//       await WidgetService.updateWidgetData();
-//     }
-//     return Future.value(true);
-//   });
-// }
+import 'package:flutter/material.dart';
+import 'package:frontend/services/location_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:home_widget/home_widget.dart';
+import 'package:intl/intl.dart';
+import '../services/constants.dart';
+import '../services/weather_service.dart';
+import '../services/formatting_service.dart';
+import 'dart:developer';
+
+class WeatherWidgetService {
+  static const String appGroupId = 'com.example.frontend.weatherWidget';
+
+  //
+
+  static Future<void> updateWeatherWidget() async {
+    try {
+      // More comprehensive check for weather data
+      if (KeyLocation != null &&
+          WeatherService.currentData.isNotEmpty &&
+          WeatherService.currentData['main'] != null &&
+          WeatherService.currentData['weather'] != null &&
+          WeatherService.currentData['weather'].isNotEmpty) {
+        final weatherData = WeatherService.currentData;
+        final location = LocationName ?? 'Unknown Location';
+        final temp = '${weatherData['main']['temp'].round()}°';
+        final description = weatherData['weather'][0]['description'];
+        final icon = weatherData['weather'][0]['icon'];
+        final windSpeed = weatherData['wind']['speed'];
+        final windInfo = '${windSpeed.toStringAsFixed(1)}km/h';
+
+        final now = DateTime.now();
+        final updatedText = 'Updated: ${DateFormat('HH:mm').format(now)}';
+
+        // Update the widget data
+        await HomeWidget.saveWidgetData<String>('location', location);
+        await HomeWidget.saveWidgetData<String>('temperature', temp);
+        await HomeWidget.saveWidgetData<String>(
+            'description', FormattingService.capitalize(description));
+        await HomeWidget.saveWidgetData<String>('updated', updatedText);
+        await HomeWidget.saveWidgetData<String>('wind', windInfo);
+
+        log('Weather icon to be saved: $icon');
+        await HomeWidget.saveWidgetData<String>('icon', icon);
+
+        // Request an update for the widget
+        await HomeWidget.updateWidget(
+          name: 'WeatherWidgetProvider',
+          androidName: 'WeatherWidgetProvider', // Không thêm package 2 lần
+        );
+
+        log('Weather widget updated successfully');
+      } else {
+        log('Cannot update widget: weather data is not available or incomplete');
+      }
+    } catch (e) {
+      log('Error updating weather widget: $e');
+    }
+  }
+
+  // Call this when fetching fresh weather data
+  static Future<void> triggerWidgetUpdate() async {
+    try {
+      if (KeyLocation != null) {
+        // Get fresh data
+        await WeatherService.loadWeatherData(
+            KeyLocation!.latitude, KeyLocation!.longitude);
+        await updateWeatherWidget();
+      } else {
+        // Try to get current location
+        Position? position = await LocationService.getCurrentLocation();
+        if (position != null) {
+          KeyLocation = position;
+          await WeatherService.loadWeatherData(
+              position.latitude, position.longitude);
+          await updateWeatherWidget();
+        }
+      }
+    } catch (e) {
+      print('Error triggering widget update: $e');
+    }
+  }
+}

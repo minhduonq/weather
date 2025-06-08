@@ -7,6 +7,16 @@ import 'package:frontend/screens/HomePage.dart';
 import 'package:frontend/screens/weather_stogare.dart';
 import 'package:frontend/services/translations.dart';
 import 'package:provider/provider.dart';
+import 'package:home_widget/home_widget.dart';
+
+// Define the background callback function
+@pragma('vm:entry-point')
+void backgroundCallback(Uri? uri) {
+  if (uri?.host == 'updateweather') {
+    // This will be called when the widget requests a background update
+    // You can add logic here if needed in the future
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +26,8 @@ void main() async {
     await DatabaseHelper().initDatabase();
     await NotificationService().init();
     await NotificationService().requestNotificationPermissions();
+    WidgetsFlutterBinding.ensureInitialized();
+    await HomeWidget.registerBackgroundCallback(backgroundCallback);
   } catch (e) {
     print("Lỗi khi khởi tạo dịch vụ: $e");
   }
