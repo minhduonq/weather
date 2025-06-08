@@ -801,10 +801,11 @@ class _ManageNoteState extends State<ManageNotification>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: Text('Quản lý thông báo'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.grey.shade100,
+        foregroundColor: Colors.black,
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
@@ -855,116 +856,14 @@ class _ManageNoteState extends State<ManageNotification>
                   padding: const EdgeInsets.all(8.0),
                   child: Column(
                     children: [
-                      // Thông tin trạng thái Timer
-                      // Card(
-                      //   margin: EdgeInsets.all(10),
-                      //   elevation: 3,
-                      //   color: _isTimerActive
-                      //       ? Colors.green[50]
-                      //       : Colors.orange[50],
-                      //   child: Padding(
-                      //     padding: EdgeInsets.all(16),
-                      //     child: Column(
-                      //       crossAxisAlignment: CrossAxisAlignment.start,
-                      //       children: [
-                      //         Row(
-                      //           children: [
-                      //             Icon(
-                      //               _isTimerActive
-                      //                   ? Icons.timer
-                      //                   : Icons.timer_off,
-                      //               color: _isTimerActive
-                      //                   ? Colors.green
-                      //                   : Colors.orange,
-                      //               size: 28,
-                      //             ),
-                      //             SizedBox(width: 8),
-                      //             Text(
-                      //               'Trạng thái Timer',
-                      //               style: TextStyle(
-                      //                 fontSize: 18,
-                      //                 fontWeight: FontWeight.bold,
-                      //                 color: _isTimerActive
-                      //                     ? Colors.green[800]
-                      //                     : Colors.orange[800],
-                      //               ),
-                      //             ),
-                      //           ],
-                      //         ),
-                      //         SizedBox(height: 12),
-                      //         Row(
-                      //           children: [
-                      //             Container(
-                      //               width: 12,
-                      //               height: 12,
-                      //               decoration: BoxDecoration(
-                      //                 shape: BoxShape.circle,
-                      //                 color: _isTimerActive
-                      //                     ? Colors.green
-                      //                     : Colors.orange,
-                      //               ),
-                      //             ),
-                      //             SizedBox(width: 8),
-                      //             Text(
-                      //               _timerStatus,
-                      //               style: TextStyle(
-                      //                 fontSize: 16,
-                      //                 fontWeight: FontWeight.w600,
-                      //               ),
-                      //             ),
-                      //           ],
-                      //         ),
-                      //         if (_nextNotificationTime.isNotEmpty) ...[
-                      //           SizedBox(height: 8),
-                      //           Row(
-                      //             children: [
-                      //               Icon(Icons.schedule,
-                      //                   size: 16, color: Colors.blue),
-                      //               SizedBox(width: 8),
-                      //               Text(
-                      //                 'Thông báo tiếp theo: $_nextNotificationTime',
-                      //                 style: TextStyle(
-                      //                   fontSize: 14,
-                      //                   color: Colors.blue[700],
-                      //                 ),
-                      //               ),
-                      //             ],
-                      //           ),
-                      //         ],
-                      //         SizedBox(height: 8),
-                      //         Container(
-                      //           padding: EdgeInsets.all(8),
-                      //           decoration: BoxDecoration(
-                      //             color: Colors.blue.withOpacity(0.1),
-                      //             borderRadius: BorderRadius.circular(8),
-                      //             border: Border.all(
-                      //                 color: Colors.blue.withOpacity(0.3)),
-                      //           ),
-                      //           child: Row(
-                      //             children: [
-                      //               Icon(Icons.info_outline,
-                      //                   color: Colors.blue, size: 16),
-                      //               SizedBox(width: 8),
-                      //               Expanded(
-                      //                 child: Text(
-                      //                   'Timer sẽ tự động đặt lại mỗi ngày và hiển thị thông báo đúng giờ',
-                      //                   style: TextStyle(
-                      //                       fontSize: 12,
-                      //                       color: Colors.blue[700]),
-                      //                 ),
-                      //               ),
-                      //             ],
-                      //           ),
-                      //         ),
-                      //       ],
-                      //     ),
-                      //   ),
-                      // ),
-
                       // Cài đặt thông báo
                       Card(
+                        color: Colors.white,
                         margin: EdgeInsets.all(10),
-                        elevation: 4,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: Padding(
                           padding: EdgeInsets.all(16),
                           child: Column(
@@ -1063,7 +962,11 @@ class _ManageNoteState extends State<ManageNotification>
                       // Thông tin vị trí
                       Card(
                         margin: EdgeInsets.all(10),
-                        elevation: 4,
+                        color: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: Padding(
                           padding: EdgeInsets.all(16),
                           child: Column(
@@ -1133,8 +1036,12 @@ class _ManageNoteState extends State<ManageNotification>
 
                       // Thông tin hướng dẫn
                       Card(
+                        color: Colors.white,
+                        elevation: 0,
                         margin: EdgeInsets.all(10),
-                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: Padding(
                           padding: EdgeInsets.all(16),
                           child: Column(

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:frontend/provider/location_notifier.dart';
 import 'package:frontend/screens/HomePage.dart';
+import 'package:frontend/screens/SearchPlace.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -9,7 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import '../services/database.dart';
 import '../widgets/modals/show_custom.dart';
-import 'add_location_screen.dart';
+//import 'add_location_screen.dart';
 
 class WeatherStorageScreen extends StatefulWidget {
   @override
@@ -287,32 +288,35 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
         final otherLocations = locations.length > 1 ? locations.sublist(1) : [];
 
         return Scaffold(
+          // Thêm backgroundColor vào Scaffold để đảm bảo màu nền đồng nhất
+          backgroundColor: Colors.grey.shade100,
           appBar: AppBar(
-            backgroundColor: Colors.blue,
+            backgroundColor: Colors.grey.shade100,
             elevation: 0,
             leading: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.black),
+              icon: Icon(Icons.arrow_back,
+                  color: Colors
+                      .black), // Đổi màu icon thành trắng để phù hợp với nền xanh
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
-            title: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  'Manage locations',
-                  style: TextStyle(color: Colors.black),
-                ),
-              ),
+            title: Text(
+              'Manage locations',
+              style: TextStyle(
+                  color: Colors
+                      .black), // Đổi màu text thành trắng để phù hợp với nền xanh
+              textAlign: TextAlign.center,
             ),
+            centerTitle: true, // Căn giữa tiêu đề
             actions: [
               IconButton(
-                icon: Icon(Icons.add, color: Colors.black),
+                icon: Icon(Icons.add,
+                    color: Colors.black), // Đổi màu icon thành trắng
                 onPressed: () async {
                   final result = await Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (context) => AddLocationScreen()),
+                    MaterialPageRoute(builder: (context) => SearchPlace()),
                   );
                   if (result == true) {
                     await locationNotifier.refreshLocations();
@@ -320,108 +324,84 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                 },
               ),
               IconButton(
-                icon: Icon(Icons.more_vert, color: Colors.black),
+                icon: Icon(Icons.more_vert,
+                    color: Colors.black), // Đổi màu icon thành trắng
                 onPressed: () {
                   showCustomModal(context);
                 },
               ),
-              //   IconButton(
-              //     icon: Icon(Icons.search, color: Colors.black),
-              //     onPressed: () async {
-              //       final selectedLocation =
-              //           await showSearch<Map<String, dynamic>>(
-              //         context: context,
-              //         delegate: LocationSearchDelegate(
-              //           locations: locations,
-              //           onSearch: (query) {
-              //             // No need for setState as Consumer will rebuild
-              //           },
-              //         ),
-              //       );
-              //       if (selectedLocation != null) {
-              //         Navigator.pushReplacement(
-              //           context,
-              //           MaterialPageRoute(
-              //             builder: (context) => HomePage(
-              //               highlightLocationName: selectedLocation['name'],
-              //             ),
-              //           ),
-              //         );
-              //       }
-              //     },
-              //   ),
             ],
           ),
-          body: Container(
-            color: Colors.white,
-            child: Stack(
-              children: [
-                RefreshIndicator(
-                  onRefresh: () => locationNotifier.refreshLocations(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SingleChildScrollView(
-                      physics: AlwaysScrollableScrollPhysics(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Vị trí hiện tại',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 8),
-                          if (favouriteLocations.isEmpty)
-                            Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
-                              color: Colors.grey.shade200,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Center(
-                                  child: Text(
-                                    'Chưa có vị trí nào được thêm. Nhấn nút + để thêm vị trí.',
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                            )
-                          else
-                            ...favouriteLocations
-                                .map((location) => buildLocationCard(location)),
-                          SizedBox(height: 16),
-                          Text(
-                            'Vị trí khác',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 8),
-                          if (otherLocations.isEmpty)
-                            Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
-                              color: Colors.grey.shade200,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Center(
-                                  child: Text(
-                                    'Không có vị trí khác.',
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                            )
-                          else
-                            ...otherLocations.map((location) =>
-                                buildDismissibleLocationCard(location)),
-                        ],
+          body: RefreshIndicator(
+            onRefresh: () => locationNotifier.refreshLocations(),
+            child: Container(
+              // Đặt height thành double.infinity để mở rộng container xuống toàn bộ màn hình
+              height: double.infinity,
+              color: Colors.grey.shade100,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  physics: AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Vị trí hiện tại',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                    ),
+                      SizedBox(height: 8),
+                      if (favouriteLocations.isEmpty)
+                        Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Center(
+                              child: Text(
+                                'Chưa có vị trí nào được thêm. Nhấn nút + để thêm vị trí.',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        ...favouriteLocations
+                            .map((location) => buildLocationCard(location)),
+                      SizedBox(height: 16),
+                      Text(
+                        'Vị trí khác',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8),
+                      if (otherLocations.isEmpty)
+                        Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Center(
+                              child: Text(
+                                'Không có vị trí khác.',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        ...otherLocations.map((location) =>
+                            buildDismissibleLocationCard(location)),
+                      // Thêm container trống ở cuối để đảm bảo khoảng trống phía dưới cùng
+                      SizedBox(height: 80),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
           floatingActionButton: FloatingActionButton(
@@ -436,76 +416,76 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
 
   Widget buildDismissibleLocationCard(Map<String, dynamic> location) {
     if (location['is_current'] == 1) {
-      return buildLocationCard(location); // Prevent dismissing current location
+      return buildLocationCard(location); // Ngăn xóa vị trí hiện tại
     }
+
     return Dismissible(
       key: Key('location-${location['id']}'),
       direction: DismissDirection.endToStart,
-      background: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.centerRight,
-        child: Icon(
-          Icons.delete,
-          color: Colors.white,
-          size: 30,
-        ),
-      ),
+      // Bỏ dismissThresholds để sử dụng ngưỡng mặc định (0.4)
+
+      // Thay đổi confirmDismiss để tự động xóa sau khi kéo đủ xa
       confirmDismiss: (direction) async {
-        return await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Xác nhận xóa'),
-              content: Text(
-                  'Bạn có chắc chắn muốn xóa vị trí "${location['name']}" không?'),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('Hủy'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: Text('Xóa'),
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                ),
-              ],
-            );
-          },
-        );
-      },
-      onDismissed: (direction) async {
         try {
           final locationNotifier =
               Provider.of<LocationNotifier>(context, listen: false);
+
+          // Lưu thông tin vị trí để có thể khôi phục nếu cần
+          final locationBackup = {
+            'name': location['name'],
+            'latitude': location['latitude'],
+            'longitude': location['longitude'],
+            'is_current': 0,
+          };
+
           await locationNotifier.deleteLocation(location['id']);
+
+          // Hiển thị thông báo với tùy chọn hoàn tác
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Đã xóa vị trí ${location['name']}'),
               action: SnackBarAction(
                 label: 'Hoàn tác',
                 onPressed: () async {
-                  await locationNotifier.addLocation({
-                    'name': location['name'],
-                    'latitude': location['latitude'],
-                    'longitude': location['longitude'],
-                    'is_current': 0,
-                  });
+                  await locationNotifier.addLocation(locationBackup);
                 },
               ),
+              duration: Duration(seconds: 3), // Thời gian hiển thị thông báo
             ),
           );
+
+          // Trả về true để xác nhận việc xóa và card biến mất
+          return true;
         } catch (e) {
           print('Lỗi khi xóa vị trí: $e');
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Không thể xóa vị trí. Vui lòng thử lại.')),
+            SnackBar(
+              content: Text('Không thể xóa vị trí. Vui lòng thử lại.'),
+            ),
           );
+          // Trả về false để card không biến mất khi có lỗi
+          return false;
         }
       },
+
+      // Background hiển thị khi kéo sang trái
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        alignment: Alignment.centerRight,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 20),
+          child: Icon(
+            Icons.delete,
+            color: Colors.white,
+            size: 30,
+          ),
+        ),
+      ),
+
       child: buildLocationCard(location),
     );
   }
@@ -520,6 +500,8 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
             margin: const EdgeInsets.only(bottom: 12),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            // Thay đổi màu card thành trắng
+            color: Colors.white,
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Center(child: CircularProgressIndicator()),
@@ -532,7 +514,8 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
             margin: const EdgeInsets.only(bottom: 12),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            color: Colors.grey.shade200,
+            // Thay đổi màu card thành trắng
+            color: Colors.white,
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Center(
@@ -557,6 +540,8 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                   margin: const EdgeInsets.only(bottom: 12),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16)),
+                  // Thay đổi màu card thành trắng
+                  color: Colors.white,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Center(child: CircularProgressIndicator()),
@@ -569,7 +554,8 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                   margin: const EdgeInsets.only(bottom: 12),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16)),
-                  color: Colors.grey.shade200,
+                  // Thay đổi màu card thành trắng
+                  color: Colors.white,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Center(
@@ -642,9 +628,10 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
 
     bool isCurrentLocation = location['is_current'] == 1;
 
-    // Define distinct background colors
-    final cardColor =
-        isCurrentLocation ? Colors.blue.shade400 : Colors.grey.shade300;
+    // Thay đổi màu card thành trắng cho tất cả các card
+    final cardColor = Colors.white;
+    // Vẫn giữ độ nâng cao hơn cho vị trí hiện tại
+    final cardElevation = 0.0;
 
     return GestureDetector(
       onTap: () {
@@ -661,7 +648,7 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         color: cardColor,
-        elevation: isCurrentLocation ? 6 : 3,
+        elevation: cardElevation,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
           child: Row(
@@ -677,8 +664,10 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                               ? Icons.my_location
                               : Icons.location_on,
                           size: 16,
-                          color:
-                              isCurrentLocation ? Colors.white : Colors.amber,
+                          // Sử dụng màu vàng cho biểu tượng vị trí hiện tại và màu vàng đậm hơn cho vị trí khác
+                          color: isCurrentLocation
+                              ? Colors.amber.shade600
+                              : Colors.amber,
                         ),
                         SizedBox(width: 4),
                         Flexible(
@@ -687,9 +676,8 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: isCurrentLocation
-                                  ? Colors.white
-                                  : Colors.black87,
+                              // Màu chữ đồng nhất cho tất cả card
+                              color: Colors.black87,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -699,9 +687,8 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                     Text(
                       location['name'].toString(),
                       style: TextStyle(
-                        color: isCurrentLocation
-                            ? Colors.white70
-                            : Colors.grey.shade700,
+                        // Màu chữ đồng nhất cho tất cả card
+                        color: Colors.grey.shade700,
                         fontSize: 12,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -710,9 +697,8 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                     Text(
                       formattedDate,
                       style: TextStyle(
-                        color: isCurrentLocation
-                            ? Colors.white70
-                            : Colors.grey.shade700,
+                        // Màu chữ đồng nhất cho tất cả card
+                        color: Colors.grey.shade700,
                         fontSize: 12,
                       ),
                     ),
@@ -728,9 +714,7 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                     height: 40,
                     errorBuilder: (_, __, ___) => Icon(
                       Icons.cloud,
-                      color: isCurrentLocation
-                          ? Colors.white
-                          : Colors.grey.shade700,
+                      color: Colors.grey.shade700,
                     ),
                   ),
                   SizedBox(width: 8),
@@ -742,26 +726,21 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color:
-                              isCurrentLocation ? Colors.white : Colors.black87,
+                          color: Colors.black87,
                         ),
                       ),
                       Text(
                         '$tempHigh°/$tempLow°',
                         style: TextStyle(
                           fontSize: 14,
-                          color: isCurrentLocation
-                              ? Colors.white70
-                              : Colors.grey.shade700,
+                          color: Colors.grey.shade700,
                         ),
                       ),
                       Text(
                         'Độ ẩm: $humidity%',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isCurrentLocation
-                              ? Colors.white70
-                              : Colors.grey.shade700,
+                          color: Colors.grey.shade700,
                         ),
                       ),
                     ],

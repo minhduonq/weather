@@ -57,12 +57,12 @@ class _SettingsPageState extends State<Setting> {
       appBar: AppBar(
         title: Text(
           'settings'.tr,
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+          style: const TextStyle(fontSize: 28),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.grey.shade100,
         elevation: 0,
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey.shade100,
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
         children: [
@@ -146,7 +146,7 @@ class _SettingsPageState extends State<Setting> {
                 'configure_notification'.tr, // Thêm mô tả
                 style: const TextStyle(
                   fontSize: 12,
-                  color: Colors.blue,
+                  color: Color.fromARGB(255, 84, 90, 95),
                 ),
               ),
               onTap: () {
@@ -209,7 +209,10 @@ class _SettingsPageState extends State<Setting> {
       ),
       subtitle: trWithStyle(
         subtitle,
-        style: const TextStyle(fontSize: 12, color: Colors.blue),
+        style: const TextStyle(
+          fontSize: 12,
+          color: Color.fromARGB(255, 84, 90, 95),
+        ),
       ),
       trailing: PopupMenuButton<String>(
         onSelected: onSelected,
@@ -221,9 +224,9 @@ class _SettingsPageState extends State<Setting> {
 
   Widget _buildCard(List<Widget> children) {
     return Card(
-      color: Colors.grey.shade200,
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 2,
+      elevation: 0,
       child: Column(
         children: List.generate(children.length * 2 - 1, (index) {
           if (index.isEven) {
