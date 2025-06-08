@@ -1,10 +1,5 @@
 # Ứng dụng dự báo thời tiết thông minh
 
-## Đọc những lưu ý sau trước khi push code của bạn lên đây
-1. KHÔNG TỰ Ý PUSH TRỰC TIẾP CODE LÊN MAIN
-2. PULL CODE TỪ MAIN VỀ KHI CÓ BẢN MỚI HƠN, LƯU Ý <b>COMMIT TRƯỚC KHI PULL ĐỂ TRÁNH BỊ MẤT CODE</b>
-3. RESOLVE CONFICT Ở MÁY CỦA BẠN, HẾT CONFLICT THÌ UP CODE LÊN BRANCH CỦA BẠN, <b>KHÔNG TỰ UP CODE VÀO MAIN ĐỂ TRÁNH BỊ MẤT FILE CỦA NGƯỜI KHÁC, LỖI CODE</b>
-4. CHẮC CHẮN CODE CỦA BẠN LÀ MỚI NHẤT TỪ MAIN RỒI HẴN PUSH LÊN BRANCH ĐỂ CÓ THỂ MERGE ĐƯỢC VÀO MAIN
 ## Giới thiệu
 Đây là repo cho bài tập lớn môn <b>Phát triển ứng dụng di động</b><br>
 Mã môn học: <b>INT3120 2</b><br>
