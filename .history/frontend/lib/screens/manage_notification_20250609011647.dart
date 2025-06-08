@@ -841,7 +841,7 @@ class _ManageNoteState extends State<ManageNotification>
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Initializing'.tr),
+                  Text('Đang khởi tạo ứng dụng...'),
                 ],
               ),
             )

@@ -561,7 +561,7 @@ class _SearchPlaceState extends State<SearchPlace>
                           SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: _stopListening,
-                            child: Text("Cancel".tr),
+                            child: Text("Hủy"),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
                               foregroundColor: Colors.red,

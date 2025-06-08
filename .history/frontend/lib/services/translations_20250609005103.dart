@@ -43,8 +43,6 @@ class AppTranslations extends Translations {
           'friday': 'Thứ sáu',
           'saturday': 'Thứ bảy',
           'sunday': 'Chủ nhật',
-          'hello':
-              'Xin chào! Tôi là trợ lý thời tiết AI. Tôi có thể giúp bạn kiểm tra thời tiết hiện tại, dự báo hàng giờ/hàng ngày và đưa ra gợi ý trang phục phù hợp. Bạn muốn biết thời tiết ở đâu?',
           // Search
           'search': 'Tìm kiếm',
           'type_place': 'Nhập tên địa điểm của bạn',
@@ -63,38 +61,9 @@ class AppTranslations extends Translations {
           'favourite_location': 'Địa điểm yêu thích',
           'other_locations': 'Địa điểm khác',
           'no other': 'Không có vị trí khác.',
-          'other': 'Các vị trí khác',
-          // Notification
-          'Manage notifications': 'Quản lý thông báo',
-          'set notifications': 'Cài đặt thông báo thời tiết',
-          'dailyNoti': 'Bật thông báo thời tiết hàng ngày',
-          'Timenoti': 'Thời gian thông báo',
-          'locainfor': 'Thông tin vị trí',
-          'Coordinates': 'Tọa độ',
-          'Accuracy': 'Độ chính xác',
-          'Update location': 'Cập nhật vị trí',
-          'Instructions': 'Hướng dẫn sử dụng',
-          'Weather data': 'Dữ liệu thời tiết',
-          'The notice':
-              'Thông báo cung cấp dự báo chi tiết cho ngày mai bao gồm nhiệt độ, độ ẩm, gió và xác suất mưa.',
-          'Initializing': 'Đang khởi tạo ứng dụng...',
+          'other': 'Các vị trí khác'
         },
         'en': {
-          'Initializing': 'Initializing the application...',
-          'The notice':
-              'The notification provides a detailed forecast for tomorrow including temperature, humidity, wind, and chance of rain.',
-          'Weather data': 'Weather Data',
-          'Instructions': 'Instructions',
-          'Update location': 'Update Location',
-          'Accuracy': 'Accuracy',
-          'Coordinates': 'Coordinates',
-          'locainfor': 'Location information',
-          'Timenoti': 'Notification time',
-          'dailyNoti': 'Enable Daily Weather Notifications',
-          'set notifications': 'Set Weather Notifications',
-          'Manage notifications': 'Manage Notifications',
-          'hello':
-              'Hello! I am an AI weather assistant. I can help you check the current weather, hourly/daily forecast, and give you suitable outfit suggestions. Want to know the weather where?',
           'other': 'Other positions.',
           'no other': 'There is no other position.',
           'Current location': 'Current Location',

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/manage_notification.dart';
-import '../../services/helpTrans.dart';
-import 'package:get/get.dart';
 
 void showCustomModal(BuildContext context) {
   showDialog(
@@ -31,7 +29,7 @@ void showCustomModal(BuildContext context) {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    title: Text('notification'.tr),
+                    title: Text('Notifications'),
                     trailing: Icon(Icons.notifications_none, size: 20),
                     onTap: () {
                       Navigator.push(

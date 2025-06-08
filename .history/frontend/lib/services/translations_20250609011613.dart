@@ -77,12 +77,8 @@ class AppTranslations extends Translations {
           'Weather data': 'Dữ liệu thời tiết',
           'The notice':
               'Thông báo cung cấp dự báo chi tiết cho ngày mai bao gồm nhiệt độ, độ ẩm, gió và xác suất mưa.',
-          'Initializing': 'Đang khởi tạo ứng dụng...',
         },
         'en': {
-          'Initializing': 'Initializing the application...',
-          'The notice':
-              'The notification provides a detailed forecast for tomorrow including temperature, humidity, wind, and chance of rain.',
           'Weather data': 'Weather Data',
           'Instructions': 'Instructions',
           'Update location': 'Update Location',

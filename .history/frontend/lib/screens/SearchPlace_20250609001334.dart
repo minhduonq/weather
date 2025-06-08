@@ -465,7 +465,7 @@ class _SearchPlaceState extends State<SearchPlace>
                             ),
                             SizedBox(height: 16),
                             Text(
-                              'Search for places'.tr,
+                              'Search for places',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 16,
@@ -550,8 +550,8 @@ class _SearchPlaceState extends State<SearchPlace>
                           Text(
                             // Thay đổi text dựa trên trạng thái xử lý
                             _isProcessingResult
-                                ? "Processing...".tr
-                                : "Listening...".tr,
+                                ? "Đang xử lý..."
+                                : "Đang nghe...",
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -561,7 +561,7 @@ class _SearchPlaceState extends State<SearchPlace>
                           SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: _stopListening,
-                            child: Text("Cancel".tr),
+                            child: Text("Hủy"),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
                               foregroundColor: Colors.red,

@@ -10,9 +10,6 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import '../services/database.dart';
 import '../widgets/modals/show_custom.dart';
-import '../../services/helpTrans.dart';
-import 'package:get/get.dart';
-
 //import 'add_location_screen.dart';
 
 class WeatherStorageScreen extends StatefulWidget {
@@ -315,7 +312,7 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
               },
             ),
             title: Text(
-              'Manage locations'.tr,
+              'Manage locations',
               style: TextStyle(
                   color: Colors
                       .black), // Đổi màu text thành trắng để phù hợp với nền xanh
@@ -359,7 +356,7 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Current location'.tr,
+                        'Vị trí hiện tại',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -385,7 +382,7 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                             .map((location) => buildLocationCard(location)),
                       SizedBox(height: 16),
                       Text(
-                        'other'.tr,
+                        'Vị trí khác',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -400,7 +397,7 @@ class _WeatherStorageScreenState extends State<WeatherStorageScreen> {
                             padding: const EdgeInsets.all(16.0),
                             child: Center(
                               child: Text(
-                                'no other'.tr,
+                                'Không có vị trí khác.',
                                 textAlign: TextAlign.center,
                               ),
                             ),

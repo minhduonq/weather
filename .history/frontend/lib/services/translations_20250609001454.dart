@@ -4,7 +4,6 @@ class AppTranslations extends Translations {
   @override
   Map<String, Map<String, String>> get keys => {
         'vi': {
-          // Home
           'current_temperature': 'Nhiệt độ hiện tại là {temp}°',
           'Sunrise': 'Bình minh',
           'Sunset': 'Hoàng hôn',
@@ -16,7 +15,6 @@ class AppTranslations extends Translations {
           'Sea Level': 'Mực nước biển',
           'Clouds': 'Mật độ mây mù',
           'daily_forecast': 'Dự báo hàng ngày',
-          // Settings
           'settings': 'Cài đặt',
           'language': 'Ngôn ngữ',
           'vietnamese': 'Tiếng Việt',
@@ -35,7 +33,6 @@ class AppTranslations extends Translations {
           'privacy': 'Chính sách riêng',
           'contact': 'Liên hệ chúng tôi',
           'notification': 'Thông báo',
-          // Calendar
           'monday': 'Thứ hai',
           'tuesday': 'Thứ ba',
           'wednesday': 'Thứ tư',
@@ -43,18 +40,9 @@ class AppTranslations extends Translations {
           'friday': 'Thứ sáu',
           'saturday': 'Thứ bảy',
           'sunday': 'Chủ nhật',
-          'hello':
-              'Xin chào! Tôi là trợ lý thời tiết AI. Tôi có thể giúp bạn kiểm tra thời tiết hiện tại, dự báo hàng giờ/hàng ngày và đưa ra gợi ý trang phục phù hợp. Bạn muốn biết thời tiết ở đâu?',
-          // Search
           'search': 'Tìm kiếm',
           'type_place': 'Nhập tên địa điểm của bạn',
           'Search for places': 'Tìm kiếm địa điểm của bạn',
-          'Processing...': 'Đang xử lý...',
-          'Listening...': 'Đang nghe...',
-          'Cancel': 'Hủy',
-          // Locations
-          'Manage locations': 'Quản lý địa điểm',
-          'Current location': 'Vị trí hiện tại',
           'selected_locations': 'Địa điểm đã chọn',
           'all': 'Tất cả',
           'no_locations': 'Không có địa điểm nào.',
@@ -62,42 +50,8 @@ class AppTranslations extends Translations {
           'delete': 'Xóa',
           'favourite_location': 'Địa điểm yêu thích',
           'other_locations': 'Địa điểm khác',
-          'no other': 'Không có vị trí khác.',
-          'other': 'Các vị trí khác',
-          // Notification
-          'Manage notifications': 'Quản lý thông báo',
-          'set notifications': 'Cài đặt thông báo thời tiết',
-          'dailyNoti': 'Bật thông báo thời tiết hàng ngày',
-          'Timenoti': 'Thời gian thông báo',
-          'locainfor': 'Thông tin vị trí',
-          'Coordinates': 'Tọa độ',
-          'Accuracy': 'Độ chính xác',
-          'Update location': 'Cập nhật vị trí',
-          'Instructions': 'Hướng dẫn sử dụng',
-          'Weather data': 'Dữ liệu thời tiết',
-          'The notice':
-              'Thông báo cung cấp dự báo chi tiết cho ngày mai bao gồm nhiệt độ, độ ẩm, gió và xác suất mưa.',
-          'Initializing': 'Đang khởi tạo ứng dụng...',
         },
         'en': {
-          'Initializing': 'Initializing the application...',
-          'The notice':
-              'The notification provides a detailed forecast for tomorrow including temperature, humidity, wind, and chance of rain.',
-          'Weather data': 'Weather Data',
-          'Instructions': 'Instructions',
-          'Update location': 'Update Location',
-          'Accuracy': 'Accuracy',
-          'Coordinates': 'Coordinates',
-          'locainfor': 'Location information',
-          'Timenoti': 'Notification time',
-          'dailyNoti': 'Enable Daily Weather Notifications',
-          'set notifications': 'Set Weather Notifications',
-          'Manage notifications': 'Manage Notifications',
-          'hello':
-              'Hello! I am an AI weather assistant. I can help you check the current weather, hourly/daily forecast, and give you suitable outfit suggestions. Want to know the weather where?',
-          'other': 'Other positions.',
-          'no other': 'There is no other position.',
-          'Current location': 'Current Location',
           'current_temperature': 'Current temperature is {temp}°',
           'Sunrise': 'Sunrise',
           'Sunset': 'Sunset',
@@ -144,10 +98,6 @@ class AppTranslations extends Translations {
           'delete': 'Delete',
           'favourite_location': 'Favourite location',
           'other_locations': 'Other locations',
-          "Processing...": 'Processing...',
-          "Listening...": 'Listening...',
-          'Cancel': 'Cancel',
-          'Manage locations': 'Manage Locations',
         },
       };
 }

@@ -883,7 +883,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           _buildDetailCard(
             icon: 'assets/svgs/pressure.svg',
-            title: 'Pressure'.tr,
+            title: 'Pressure',
             value: '${currentData['main']['pressure']} mb',
             subtitle: '',
             showGauge: true,
@@ -891,7 +891,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           _buildDetailCard(
             icon: 'assets/svgs/wind.svg',
-            title: 'Wind'.tr,
+            title: 'Wind',
             value: '',
             subtitle: '',
             showWindDirection: true,
@@ -906,20 +906,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           _buildDetailCard(
             icon: 'assets/svgs/visibility.svg',
-            title: 'Visibility'.tr,
+            title: 'Visibility',
             value:
                 '${(currentData['visibility'] / 1000).toStringAsFixed(2)} km',
             subtitle: '',
           ),
           _buildDetailCard(
             icon: 'assets/svgs/sea_level.svg',
-            title: 'Sea Level'.tr,
+            title: 'Sea Level',
             value: '${currentData['main']['sea_level'] ?? 0} hPa',
             subtitle: '',
           ),
           _buildDetailCard(
             icon: 'assets/svgs/cloudiness.svg',
-            title: 'Clouds'.tr,
+            title: 'Clouds',
             value: '${currentData['clouds']['all']}%',
             subtitle: '',
           ),
@@ -1048,7 +1048,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'radar_and_map'.tr,
+            'Radar and Map',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -1114,12 +1114,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildSunTimeBox(
-                'Sunrise'.tr,
+                'Sunrise',
                 FormattingService.formatEpochTimeToTime(
                     currentData['sys']['sunrise'], currentData['timezone']),
               ),
               _buildSunTimeBox(
-                'Sunset'.tr,
+                'Sunset',
                 FormattingService.formatEpochTimeToTime(
                     currentData['sys']['sunset'], currentData['timezone']),
               ),

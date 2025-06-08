@@ -1114,12 +1114,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildSunTimeBox(
-                'Sunrise'.tr,
+                'Sunrise',
                 FormattingService.formatEpochTimeToTime(
                     currentData['sys']['sunrise'], currentData['timezone']),
               ),
               _buildSunTimeBox(
-                'Sunset'.tr,
+                'Sunset',
                 FormattingService.formatEpochTimeToTime(
                     currentData['sys']['sunset'], currentData['timezone']),
               ),

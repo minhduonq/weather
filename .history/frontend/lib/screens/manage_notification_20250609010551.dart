@@ -841,7 +841,7 @@ class _ManageNoteState extends State<ManageNotification>
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Initializing'.tr),
+                  Text('Đang khởi tạo ứng dụng...'),
                 ],
               ),
             )
@@ -877,7 +877,7 @@ class _ManageNoteState extends State<ManageNotification>
                                       color: Theme.of(context).primaryColor),
                                   SizedBox(width: 8),
                                   Text(
-                                    'set notifications'.tr,
+                                    'Cài đặt thông báo thời tiết',
                                     style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold),
@@ -886,7 +886,8 @@ class _ManageNoteState extends State<ManageNotification>
                               ),
                               SizedBox(height: 12),
                               SwitchListTile(
-                                title: Text('dailyNoti'.tr),
+                                title:
+                                    Text('Bật thông báo thời tiết hàng ngày'),
                                 subtitle: Text(
                                   notificationEnabled
                                       ? 'Thông báo sẽ hiển thị vào ${formatTimeDisplay(notificationTime!)}'
@@ -910,7 +911,7 @@ class _ManageNoteState extends State<ManageNotification>
                               ),
                               Divider(),
                               ListTile(
-                                title: Text('Timenoti'.tr),
+                                title: Text('Thời gian thông báo'),
                                 subtitle: Text(
                                   formatTimeDisplay(notificationTime!),
                                   style: TextStyle(
@@ -978,7 +979,7 @@ class _ManageNoteState extends State<ManageNotification>
                                   Icon(Icons.location_on, color: Colors.red),
                                   SizedBox(width: 8),
                                   Text(
-                                    'locainfor'.tr,
+                                    'Thông tin vị trí',
                                     style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold),
@@ -987,7 +988,7 @@ class _ManageNoteState extends State<ManageNotification>
                               ),
                               SizedBox(height: 12),
                               ListTile(
-                                title: Text('Current location'.tr),
+                                title: Text('Vị trí hiện tại'),
                                 subtitle: Text(
                                   _getCurrentLocationName(),
                                   style: TextStyle(fontWeight: FontWeight.bold),
@@ -996,7 +997,7 @@ class _ManageNoteState extends State<ManageNotification>
                               ),
                               if (currentPosition != null) ...[
                                 ListTile(
-                                  title: Text('Coordinates'.tr),
+                                  title: Text('Tọa độ'),
                                   subtitle: Text(
                                     'Lat: ${currentPosition!.latitude.toStringAsFixed(4)}, Lon: ${currentPosition!.longitude.toStringAsFixed(4)}',
                                     style: TextStyle(
@@ -1005,7 +1006,7 @@ class _ManageNoteState extends State<ManageNotification>
                                   leading: Icon(Icons.gps_fixed),
                                 ),
                                 ListTile(
-                                  title: Text('Accuracy'.tr),
+                                  title: Text('Độ chính xác'),
                                   subtitle: Text(
                                       '${currentPosition!.accuracy.toStringAsFixed(1)}m'),
                                   leading: Icon(Icons.my_location),
@@ -1024,7 +1025,7 @@ class _ManageNoteState extends State<ManageNotification>
                                       'Đã cập nhật vị trí thành công');
                                 },
                                 icon: Icon(Icons.refresh),
-                                label: Text('Update location'.tr),
+                                label: Text('Cập nhật vị trí'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blue,
                                   foregroundColor: Colors.white,
@@ -1054,7 +1055,7 @@ class _ManageNoteState extends State<ManageNotification>
                                       color: Colors.purple),
                                   SizedBox(width: 8),
                                   Text(
-                                    'Instructions'.tr,
+                                    'Hướng dẫn sử dụng',
                                     style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold),
@@ -1078,8 +1079,8 @@ class _ManageNoteState extends State<ManageNotification>
                               // SizedBox(height: 8),
                               _buildInfoItem(
                                 Icons.cloud,
-                                'Weather data'.tr,
-                                'The notice'.tr,
+                                'Dữ liệu thời tiết',
+                                'Thông báo cung cấp dự báo chi tiết cho ngày mai bao gồm nhiệt độ, độ ẩm, gió và xác suất mưa.',
                                 Colors.orange,
                               ),
                               // SizedBox(height: 8),

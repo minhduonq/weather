@@ -1086,9 +1086,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Widget _buildSunriseSunset() {
     final int currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final int sunriseTime = currentData['sys']?['sunrise'] ?? currentTime;
+    final int sunriseTime = currentData['sys']?['sunrise'.tr] ?? currentTime;
     final int sunsetTime =
-        currentData['sys']?['sunset'] ?? (currentTime + 43200);
+        currentData['sys']?['sunset'.tr] ?? (currentTime + 43200);
 
     return Container(
       width: MediaQuery.of(context).size.width - 20,
@@ -1114,12 +1114,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildSunTimeBox(
-                'Sunrise'.tr,
+                'Sunrise',
                 FormattingService.formatEpochTimeToTime(
                     currentData['sys']['sunrise'], currentData['timezone']),
               ),
               _buildSunTimeBox(
-                'Sunset'.tr,
+                'Sunset',
                 FormattingService.formatEpochTimeToTime(
                     currentData['sys']['sunset'], currentData['timezone']),
               ),
