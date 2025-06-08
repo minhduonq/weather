@@ -21,11 +21,8 @@ Chủ đề: <b>Xây dựng ứng dụng ItNow - Ứng dụng dự báo thời t
 - Tìm kiếm địa điểm
 - Lưu địa điểm, xoá địa điểm
 - Hỗ trợ nhiều thứ tiếng (English, Tiếng Việt)
-- Hỗ trợ tuỳ chỉnh
+- Tạo thông báo nhắc nhở tuỳ chỉnh
+- Chatbot với trí tuệ nhân tạo
+- Widget thời tiết
 
-## Hướng dẫn cài đặt và sử dụng
-Cách 1. Cài đặt qua APK
-  1. Tải APK từ [đây](https://bit.ly/apkItNow)
-  2. Cài đặt trên ứng dụng Android
-  3. Khởi chạy ứng dụng
 
