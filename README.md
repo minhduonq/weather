@@ -24,5 +24,12 @@ Chủ đề: <b>Xây dựng ứng dụng ItNow - Ứng dụng dự báo thời t
 - Tạo thông báo nhắc nhở tuỳ chỉnh
 - Chatbot với trí tuệ nhân tạo
 - Widget thời tiết
-
+## Hướng dẫn cài đặt và sử dụng
+- Clone dự án về máy
+- Chạy Chatbot theo hướng dẫn trong <code>Chatbot\README.md</code>
+- Truy cập vào thư mục frontend
+- Tải các thư viện trong file pubspec.yaml bằng câu lệnh <code>flutter pub get</code>.
+- Chạy chương trình bằng <code>flutter run</code>
+- Cho phép ứng dụng các quyền vị trí, micro, thông báo
+- Để sử dụng widget, trên màn hình chờ của điện thoại, chọn Widget, sau đó chọn widget của ứng dụng.
 
