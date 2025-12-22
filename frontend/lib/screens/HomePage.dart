@@ -15,6 +15,7 @@ import '../services/helpTrans.dart';
 import 'SearchPlace.dart';
 import 'Setting.dart';
 import 'Chatbot.dart';
+import 'github_commits_screen.dart';
 import 'dart:math';
 
 class HomePage extends StatefulWidget {
@@ -439,6 +440,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => Chatbot()),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.commit, color: Colors.white, size: 30),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => GitHubCommitsScreen()),
                     );
                   },
                 ),

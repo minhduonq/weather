@@ -3,6 +3,7 @@ const cors = require('cors');
 const db = require('./db');
 const userRoutes = require('./controllers/userRoutes');
 const weatherRoutes = require('./controllers/weatherRoutes'); // Import weather routes
+const githubRoutes = require('./controllers/githubRoutes'); // Import github routes
 
 require('dotenv').config();
 
@@ -16,11 +17,12 @@ app.use(cors());
 // Kiểm tra kết nối MySQL
 db.execute('SELECT 1')
     .then(() => console.log('Kết nối MySQL thành công!'))
-    .catch(err => console.error('Kết nối MySQL thất bại:', err));
+    .catch(err => console.warn('Kết nối MySQL thất bại:', err.message, '- Tiếp tục không có database'));
 
 // Sử dụng routes
 app.use('/api/users', userRoutes); // Route cho người dùng
 app.use('/weather', weatherRoutes); // Route cho thời tiết
+app.use('/github', githubRoutes); // Route cho GitHub
 
 // Khởi động server
 app.listen(PORT, () => {
